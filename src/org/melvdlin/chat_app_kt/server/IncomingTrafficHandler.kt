@@ -5,7 +5,7 @@ import java.io.InputStream
 import java.io.ObjectInputStream
 import java.util.concurrent.locks.ReentrantLock
 
-class IncomingTrafficHandler(private val inputStream : InputStream) : Thread() {
+class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), AutoCloseable {
 
     private val onTrafficReceivedListeners = mutableListOf<(ClientTraffic) -> Unit>()
     private val lock = ReentrantLock()
@@ -24,6 +24,18 @@ class IncomingTrafficHandler(private val inputStream : InputStream) : Thread() {
         }
     }
 
-    fun addOnTrafficReceivedListener(listener : (ClientTraffic) -> Unit) = synchronized(lock) { onTrafficReceivedListeners += listener }
-    fun removeOnTrafficReceivedListener(listener : (ClientTraffic) -> Unit) = synchronized(lock) { onTrafficReceivedListeners -= listener }
+    fun addOnTrafficReceivedListener(listener : (ClientTraffic) -> Unit) {
+        synchronized(lock) {
+            onTrafficReceivedListeners += listener
+        }
+    }
+
+    fun removeOnTrafficReceivedListener(listener : (ClientTraffic) -> Unit) {
+        synchronized(lock) {
+            onTrafficReceivedListeners -= listener
+        }
+    }
+    override fun close() {
+        interrupt()
+    }
 }
