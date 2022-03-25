@@ -25,6 +25,8 @@ object Client {
     private lateinit var server : Socket
     private val serverLock = ReentrantLock()
 
+    fun start() = start(listOf())
+
     fun start(plugins : Collection<ClientPlugin>) {
         if (started) {
             throw IllegalStateException()
@@ -44,7 +46,7 @@ object Client {
     }
 }
 
-object ClientFXApp : Application() {
+class ClientFXApp : Application() {
 
     object Constants {
         const val maxPortNumber = 0xFFFF
@@ -57,6 +59,9 @@ object ClientFXApp : Application() {
     override fun start(primaryStage : Stage) {
         this.primaryStage = primaryStage
         primaryStage.scene = primaryScene
+
+        buildLoginScreen()
+        primaryStage.show()
     }
 
     private fun buildLoginScreen() {
@@ -72,8 +77,9 @@ object ClientFXApp : Application() {
         val portEntryBox = HBox()
         root.children += portEntryBox
 
-        val portEntryField = TextField("Enter a port number...")
-        root.children += portEntryField
+        val portEntryField = TextField()
+        portEntryBox.children += portEntryField
+        portEntryField.promptText = "Enter a port number..."
 
         val portEntrySubmitButton = Button("Connect")
         portEntryBox.children += portEntrySubmitButton
@@ -83,7 +89,7 @@ object ClientFXApp : Application() {
             if (!Constants.digits.contains(it.character)) {
                 it.consume()
             }
-            if (Constants.maxPortNumber < (portEntryField.text + it.character).toInt()) {
+            else if (Constants.maxPortNumber < (portEntryField.text + it.character).toInt()) {
                 portEntryField.text = Constants.maxPortNumber.toString()
                 portEntryField.positionCaret(portEntryField.text.length)
                 it.consume()
@@ -131,7 +137,7 @@ object ClientFXApp : Application() {
                 },
                 onFailed = {
                     Platform.runLater {
-                        feedbackLabel.text = "Failed to connect to port $port at host ${host.hostName}:\n\t${it}"
+                        feedbackLabel.text = "Failed to connect to port $port at host ${host.hostName}:\n${it}"
                         portEntryField.isDisable = false
                         portEntrySubmitButton.isDisable = false
                     }
@@ -139,7 +145,7 @@ object ClientFXApp : Application() {
             )
         }
         portEntrySubmitButton.onAction = EventHandler {
-            submitPort
+            submitPort()
         }
     }
 
@@ -154,11 +160,35 @@ object ClientFXApp : Application() {
             onStart()
             try {
                 Client.onConnected(Socket(host, port), primaryScene)
+                onSuccess()
             } catch (e : Throwable) {
                 onFailed(e)
-            } finally {
-                onSuccess()
             }
         }.start()
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

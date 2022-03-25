@@ -4,5 +4,5 @@ module org.melvdlin.chat_app_kt {
     requires kotlin.stdlib;
     requires kotlin.test;
 
-//    opens org.melvdlin.fpt_chat_app.sandbox.server to javafx.graphics;
+    opens org.melvdlin.chat_app_kt.client to javafx.graphics;
 }
