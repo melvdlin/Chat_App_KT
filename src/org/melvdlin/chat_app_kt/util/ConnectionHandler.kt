@@ -1,16 +1,16 @@
-package org.melvdlin.chat_app_kt.server
+package org.melvdlin.chat_app_kt.util
 
-import org.melvdlin.chat_app_kt.plugins.server.ServerPlugin
+import org.melvdlin.chat_app_kt.plugins.Plugin
 import org.melvdlin.chat_app_kt.traffic.server.ServerTraffic
 import java.io.ObjectOutputStream
 import java.net.Socket
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
-class ConnectionHandler(private val client : Socket, private val plugins : Collection<ServerPlugin>, private val onClosing : () -> Unit) : Thread(), AutoCloseable {
+class ConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>, private val onClosing : () -> Unit) : Thread(), AutoCloseable {
 
     private val trafficQueue : BlockingQueue<ServerTraffic> = LinkedBlockingQueue()
-    private val incomingTrafficHandler = IncomingTrafficHandler(client.getInputStream())
+    private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream())
 
     fun sendTraffic(traffic : ServerTraffic) {
         if (isInterrupted) {
@@ -21,19 +21,17 @@ class ConnectionHandler(private val client : Socket, private val plugins : Colle
 
     override fun run() {
 
-
-
-        plugins.forEach { it.onConnectionAccepted(this, incomingTrafficHandler) }
+        plugins.forEach { it.onConnectionEstablished(this, incomingTrafficHandler) }
 
         incomingTrafficHandler.start()
-        ObjectOutputStream(client.getOutputStream()).use {
+        ObjectOutputStream(socket.getOutputStream()).use {
             while (!isInterrupted || !trafficQueue.isEmpty()) {
                 it.writeObject(trafficQueue.take())
             }
         }
 
         onClosing()
-        client.close()
+        socket.close()
     }
 
     override fun close() {

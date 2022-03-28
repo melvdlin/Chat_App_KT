@@ -1,8 +1,8 @@
 package org.melvdlin.chat_app_kt.plugins.client
 
 import javafx.scene.Scene
-import java.net.Socket
+import org.melvdlin.chat_app_kt.plugins.Plugin
 
-interface ClientPlugin {
-    fun onConnected(server : Socket, primaryScene : Scene)
+interface ClientPlugin : Plugin {
+    fun onClientStartup()
 }

@@ -13,17 +13,20 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import org.melvdlin.chat_app_kt.plugins.client.ClientPlugin
+import org.melvdlin.chat_app_kt.testbed.plugins
+import org.melvdlin.chat_app_kt.util.ConnectionHandler
 import java.net.InetAddress
 import java.net.Socket
 import java.util.concurrent.locks.ReentrantLock
 
 object Client {
 
-    private lateinit var plugins : Collection<ClientPlugin>
+    private var plugins : Collection<ClientPlugin> = mutableListOf()
+
     private var started = false
 
-    private lateinit var server : Socket
-    private val serverLock = ReentrantLock()
+    private lateinit var connection : ConnectionHandler
+    private val connectionLock = ReentrantLock()
 
     fun start() = start(listOf())
 
@@ -36,17 +39,20 @@ object Client {
         Application.launch(ClientFXApp::class.java)
     }
 
-    fun onConnected(server : Socket, primaryScene : Scene) {
-        synchronized(serverLock) {
-            this.server = server
-        }
-        plugins.forEach {
-            it.onConnected(this.server, primaryScene)
+    fun forEachPlugin(action : (ClientPlugin) -> Unit) {
+        plugins.forEach(action)
+    }
+
+    fun onConnected(server : Socket, onConnectionClosing : () -> Unit) {
+        synchronized(connectionLock) {
+            connection = ConnectionHandler(server, plugins, onConnectionClosing)
+            connection.start()
         }
     }
 }
 
 class ClientFXApp : Application() {
+
 
     object Constants {
         const val maxPortNumber = 0xFFFF
@@ -56,15 +62,18 @@ class ClientFXApp : Application() {
     private lateinit var primaryStage : Stage
     private val primaryScene = Scene(VBox())
 
+
     override fun start(primaryStage : Stage) {
         this.primaryStage = primaryStage
         primaryStage.scene = primaryScene
 
-        buildLoginScreen()
+        Client.forEachPlugin { it.onClientStartup() }
+
+        buildConnectScreen()
         primaryStage.show()
     }
 
-    private fun buildLoginScreen() {
+    private fun buildConnectScreen() {
         val root = VBox()
         primaryScene.root = root
 
@@ -133,6 +142,7 @@ class ClientFXApp : Application() {
                 onSuccess = {
                     Platform.runLater {
                         feedbackLabel.text = "Successfully connected to port $port at host ${host.hostName}."
+                        primaryStage.hide()
                     }
                 },
                 onFailed = {
@@ -140,6 +150,14 @@ class ClientFXApp : Application() {
                         feedbackLabel.text = "Failed to connect to port $port at host ${host.hostName}:\n${it}"
                         portEntryField.isDisable = false
                         portEntrySubmitButton.isDisable = false
+                    }
+                },
+                onConnectionClosing = {
+                    Client.forEachPlugin { it.onConnectionClosing() }
+                    Platform.runLater {
+                        portEntryField.isDisable = false
+                        portEntrySubmitButton.isDisable = false
+                        primaryStage.show()
                     }
                 }
             )
@@ -152,6 +170,7 @@ class ClientFXApp : Application() {
     private fun connectAsync(
         host : InetAddress,
         port : Int,
+        onConnectionClosing : () -> Unit,
         onStart : () -> Unit,
         onSuccess : () -> Unit,
         onFailed : (e : Throwable) -> Unit) {
@@ -159,7 +178,7 @@ class ClientFXApp : Application() {
         Thread {
             onStart()
             try {
-                Client.onConnected(Socket(host, port), primaryScene)
+                Client.onConnected(Socket(host, port), onConnectionClosing)
                 onSuccess()
             } catch (e : Throwable) {
                 onFailed(e)

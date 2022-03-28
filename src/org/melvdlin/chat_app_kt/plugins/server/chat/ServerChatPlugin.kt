@@ -1,11 +1,11 @@
 package org.melvdlin.chat_app_kt.plugins.server.chat
 
 import org.melvdlin.chat_app_kt.plugins.server.ServerPlugin
-import org.melvdlin.chat_app_kt.server.ConnectionHandler
-import org.melvdlin.chat_app_kt.server.IncomingTrafficHandler
+import org.melvdlin.chat_app_kt.util.ConnectionHandler
+import org.melvdlin.chat_app_kt.util.IncomingTrafficHandler
 import java.util.concurrent.locks.ReentrantLock
 
-class ChatPlugin : ServerPlugin {
+class ServerChatPlugin : ServerPlugin {
 
     private val messageLog = MessageLog()
     private val broadcastTo = mutableListOf<ChatterConnection>()
@@ -19,7 +19,7 @@ class ChatPlugin : ServerPlugin {
         }
     }
 
-    override fun onConnectionAccepted(
+    override fun onConnectionEstablished(
         connectionHandler : ConnectionHandler,
         incomingTrafficHandler : IncomingTrafficHandler,
     ) {
@@ -30,4 +30,6 @@ class ChatPlugin : ServerPlugin {
             incomingTrafficHandler.addOnTrafficReceivedListener { chatterConnection.onTrafficReceived(it) }
         }
     }
+
+    override fun onConnectionClosing() { }
 }

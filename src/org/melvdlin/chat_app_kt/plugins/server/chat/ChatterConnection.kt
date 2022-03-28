@@ -1,6 +1,6 @@
 package org.melvdlin.chat_app_kt.plugins.server.chat
 
-import org.melvdlin.chat_app_kt.server.ConnectionHandler
+import org.melvdlin.chat_app_kt.util.ConnectionHandler
 import org.melvdlin.chat_app_kt.traffic.client.ClientTraffic
 import org.melvdlin.chat_app_kt.traffic.client.requests.*
 import org.melvdlin.chat_app_kt.traffic.server.MessageBroadcast

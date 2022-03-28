@@ -1,4 +1,4 @@
-package org.melvdlin.chat_app_kt.server
+package org.melvdlin.chat_app_kt.util
 
 import org.melvdlin.chat_app_kt.traffic.client.ClientTraffic
 import java.io.InputStream
