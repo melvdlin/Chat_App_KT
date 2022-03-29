@@ -1,6 +1,7 @@
 package org.melvdlin.chat_app_kt.util
 
 import org.melvdlin.chat_app_kt.plugins.Plugin
+import org.melvdlin.chat_app_kt.traffic.Traffic
 import org.melvdlin.chat_app_kt.traffic.server.ServerTraffic
 import java.io.ObjectOutputStream
 import java.net.Socket
@@ -9,10 +10,10 @@ import java.util.concurrent.LinkedBlockingQueue
 
 class ConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>, private val onClosing : () -> Unit) : Thread(), AutoCloseable {
 
-    private val trafficQueue : BlockingQueue<ServerTraffic> = LinkedBlockingQueue()
+    private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
     private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream())
 
-    fun sendTraffic(traffic : ServerTraffic) {
+    fun sendTraffic(traffic : Traffic) {
         if (isInterrupted) {
             throw IllegalStateException()
         }

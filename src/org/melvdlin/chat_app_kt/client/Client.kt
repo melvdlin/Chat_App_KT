@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import org.melvdlin.chat_app_kt.plugins.client.ClientPlugin
+import org.melvdlin.chat_app_kt.plugins.client.chat.fx.TextEntryBox
 import org.melvdlin.chat_app_kt.testbed.plugins
 import org.melvdlin.chat_app_kt.util.ConnectionHandler
 import java.net.InetAddress
@@ -83,53 +84,32 @@ class ClientFXApp : Application() {
         val feedbackLabel = Label()
         root.children += feedbackLabel
 
-        val portEntryBox = HBox()
+        val portEntryBox = TextEntryBox(
+            disableWhenBlank = true,
+            buttonText = "Connect",
+            promptText = "Enter a port number...")
         root.children += portEntryBox
 
-        val portEntryField = TextField()
-        portEntryBox.children += portEntryField
-        portEntryField.promptText = "Enter a port number..."
-
-        val portEntrySubmitButton = Button("Connect")
-        portEntryBox.children += portEntrySubmitButton
-
         // intercept non-digit characters and enforce max port number
-        portEntryField.addEventFilter(KeyEvent.KEY_TYPED) {
-            if (!Constants.digits.contains(it.character)) {
-                it.consume()
-            }
-            else if (Constants.maxPortNumber < (portEntryField.text + it.character).toInt()) {
-                portEntryField.text = Constants.maxPortNumber.toString()
-                portEntryField.positionCaret(portEntryField.text.length)
-                it.consume()
-            }
-        }
-
-        // disable submission if port entry field is blank and reenable if it changes to not blank
-        portEntryField.textProperty().addListener { _, _, newValue ->
-            if (portEntrySubmitButton.isDisabled && newValue.isNotBlank()) {
-                portEntrySubmitButton.isDisable = false
-            }
-            if (!portEntrySubmitButton.isDisabled && newValue.isBlank()) {
-                portEntrySubmitButton.isDisable = true
+        portEntryBox.textField.addEventFilter(KeyEvent.KEY_TYPED) {
+            it?.let {
+                if (!Constants.digits.contains(it.character)) {
+                    it.consume()
+                }
+                else if (Constants.maxPortNumber < (portEntryBox.textField.text + it.character).toInt()) {
+                    portEntryBox.textField.text = Constants.maxPortNumber.toString()
+                    portEntryBox.textField.positionCaret(portEntryBox.textField.text.length)
+                    it.consume()
+                }
             }
         }
 
-        // enable submission via pressing enter in the text field
-        portEntryField.onKeyPressed = EventHandler { event ->
-            if (event.code == KeyCode.ENTER) {
-                portEntrySubmitButton.fire()
-            }
-        }
-
-        // enable submission via button and disable it (due to text field being initially empty)
-        portEntrySubmitButton.isDisable = true
         val submitPort = {
             val host = InetAddress.getLocalHost()
-            val port = portEntryField.text.toInt()
+            val port = portEntryBox.textField.text.toInt()
 
-            portEntryField.isDisable = true
-            portEntrySubmitButton.isDisable = true
+            portEntryBox.textField.isDisable = true
+            portEntryBox.submitButton.isDisable = true
 
             connectAsync(
                 host = host,
@@ -148,21 +128,21 @@ class ClientFXApp : Application() {
                 onFailed = {
                     Platform.runLater {
                         feedbackLabel.text = "Failed to connect to port $port at host ${host.hostName}:\n${it}"
-                        portEntryField.isDisable = false
-                        portEntrySubmitButton.isDisable = false
+                        portEntryBox.textField.isDisable = false
+                        portEntryBox.submitButton.isDisable = false
                     }
                 },
                 onConnectionClosing = {
                     Client.forEachPlugin { it.onConnectionClosing() }
                     Platform.runLater {
-                        portEntryField.isDisable = false
-                        portEntrySubmitButton.isDisable = false
+                        portEntryBox.textField.isDisable = false
+                        portEntryBox.submitButton.isDisable = false
                         primaryStage.show()
                     }
                 }
             )
         }
-        portEntrySubmitButton.onAction = EventHandler {
+        portEntryBox.submitButton.onAction = EventHandler {
             submitPort()
         }
     }

@@ -24,7 +24,11 @@ class MessageLog {
 
     fun toList(backlog : Int) : List<ChatMessage> {
         synchronized(lock) {
-            return log.subList(min(0, 1 + log.lastIndex - backlog), 1 + log.lastIndex).toList()
+            return if (backlog < 0) {
+                log.toList()
+            } else {
+                log.subList(min(0, 1 + log.lastIndex - backlog), 1 + log.lastIndex).toList()
+            }
         }
     }
 
