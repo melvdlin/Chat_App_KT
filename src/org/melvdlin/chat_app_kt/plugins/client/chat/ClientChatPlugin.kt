@@ -13,7 +13,12 @@ import org.melvdlin.chat_app_kt.plugins.client.ClientPlugin
 import org.melvdlin.chat_app_kt.plugins.client.chat.fx.ChatMessageListCell
 import org.melvdlin.chat_app_kt.plugins.client.chat.fx.TextEntryBox
 import org.melvdlin.chat_app_kt.plugins.server.chat.ChatMessage
+import org.melvdlin.chat_app_kt.traffic.ErrorNotification
 import org.melvdlin.chat_app_kt.traffic.client.requests.FetchMessageLogRequest
+import org.melvdlin.chat_app_kt.traffic.client.requests.LoginRequest
+import org.melvdlin.chat_app_kt.traffic.server.MessageBroadcast
+import org.melvdlin.chat_app_kt.traffic.server.responses.FetchMessageLogResponse
+import org.melvdlin.chat_app_kt.traffic.server.responses.OkResponse
 import org.melvdlin.chat_app_kt.util.ConnectionHandler
 import org.melvdlin.chat_app_kt.util.IncomingTrafficHandler
 import java.util.concurrent.locks.ReentrantLock
@@ -32,27 +37,45 @@ class ClientChatPlugin : ClientPlugin {
         incomingTrafficHandler : IncomingTrafficHandler,
     ) {
         synchronized(lock) {
-            connectionHandler.sendTraffic(FetchMessageLogRequest(-1))
+            val root = VBox()
+            val infoLabel = Label()
+            val messageBox = ListView(messageLog)
+            val feedbackLabel = Label()
+            val sendMessageBox = TextEntryBox(true, "Send", "Send a message...")
+
             Platform.runLater {
-                stage = Stage()
-                val root = VBox()
-                stage.scene = Scene(root)
-
-                val infoLabel = Label()
                 root.children += infoLabel
-
-                val messageBox = ListView(messageLog)
                 root.children += messageBox
-                messageBox.cellFactory = Callback { ChatMessageListCell() }
-
-                val feedbackLabel = Label()
                 root.children += feedbackLabel
-
-                val sendMessageBox = TextEntryBox(true, "Send", "Send a message...")
                 root.children += sendMessageBox
-
-                TODO("Implement actual application logic")
+                messageBox.cellFactory = Callback { ChatMessageListCell() }
+                stage = Stage()
+                stage.scene = Scene(root)
+                stage.show()
+                //TODO("Implement actual application logic")
             }
+            incomingTrafficHandler.addOnTrafficReceivedListener {
+                when (it) {
+                    is OkResponse -> {
+                        Platform.runLater { feedbackLabel.text = "Ok" }
+                    }
+                    is ErrorNotification -> {
+                        if (it.fatal) {
+                            Platform.runLater { feedbackLabel.text = "fatal error:\n$it" }
+                        } else {
+                            Platform.runLater { feedbackLabel.text = "error:\n$it" }
+                        }
+                    }
+                    is FetchMessageLogResponse -> {
+                        messageLog.addAll(it.messageLog)
+                    }
+                    is MessageBroadcast -> {
+                        messageLog += it.msg
+                    }
+                }
+            }
+            connectionHandler.sendTraffic(LoginRequest("deez"))
+            connectionHandler.sendTraffic(FetchMessageLogRequest(-1))
         }
     }
 

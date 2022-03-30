@@ -1,4 +1,3 @@
 package org.melvdlin.chat_app_kt.traffic
 
-interface Traffic {
-}
+interface Traffic : java.io.Serializable

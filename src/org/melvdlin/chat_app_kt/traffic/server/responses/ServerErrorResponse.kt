@@ -8,3 +8,8 @@ data class ServerErrorResponse(
     override val fatal : Boolean,
     override val info : String
     ) : ServerResponse, ErrorNotification
+{
+    override fun toString() : String {
+        return info
+    }
+}

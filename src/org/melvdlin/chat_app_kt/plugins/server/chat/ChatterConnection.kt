@@ -1,5 +1,6 @@
 package org.melvdlin.chat_app_kt.plugins.server.chat
 
+import org.melvdlin.chat_app_kt.traffic.Traffic
 import org.melvdlin.chat_app_kt.util.ConnectionHandler
 import org.melvdlin.chat_app_kt.traffic.client.ClientTraffic
 import org.melvdlin.chat_app_kt.traffic.client.requests.*
@@ -11,11 +12,13 @@ class ChatterConnection(private val messageLog : MessageLog, private val connect
     private companion object ErrorResponseBuilder {
 
         enum class ClientErrorCause {
+            UNKNOWN_TRAFFIC,
             CLIENT_ALREADY_LOGGED_IN,
             CLIENT_NOT_LOGGED_IN;
 
             val infoString : String get() {
                 return when (this) {
+                    UNKNOWN_TRAFFIC -> "Protocol violation: unknown traffic"
                     CLIENT_ALREADY_LOGGED_IN -> "Protocol violation: client is already logged in"
                     CLIENT_NOT_LOGGED_IN -> "Protocol violation: client is not logged in"
                     else -> ""
@@ -44,8 +47,11 @@ class ChatterConnection(private val messageLog : MessageLog, private val connect
 
     private var chatterName : String? = null
 
-    fun onTrafficReceived(traffic : ClientTraffic) {
+    fun onTrafficReceived(traffic : Traffic) {
         when (traffic) {
+            !is ClientTraffic -> {
+                connectionHandler.close()
+            }
             is LoginRequest -> {
                 if (chatterName != null) {
                     connectionHandler.sendTraffic(
