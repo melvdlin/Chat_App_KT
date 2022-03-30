@@ -3,6 +3,7 @@ package org.melvdlin.chat_app_kt.plugins.client.chat
 import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
+import javafx.event.EventHandler
 import javafx.scene.Scene
 import javafx.scene.control.Label
 import javafx.scene.control.ListView
@@ -16,6 +17,7 @@ import org.melvdlin.chat_app_kt.plugins.server.chat.ChatMessage
 import org.melvdlin.chat_app_kt.traffic.ErrorNotification
 import org.melvdlin.chat_app_kt.traffic.client.requests.FetchMessageLogRequest
 import org.melvdlin.chat_app_kt.traffic.client.requests.LoginRequest
+import org.melvdlin.chat_app_kt.traffic.client.requests.SendMessageRequest
 import org.melvdlin.chat_app_kt.traffic.server.MessageBroadcast
 import org.melvdlin.chat_app_kt.traffic.server.responses.FetchMessageLogResponse
 import org.melvdlin.chat_app_kt.traffic.server.responses.OkResponse
@@ -49,6 +51,11 @@ class ClientChatPlugin : ClientPlugin {
                 root.children += feedbackLabel
                 root.children += sendMessageBox
                 messageBox.cellFactory = Callback { ChatMessageListCell() }
+                sendMessageBox.submitButton.onAction = EventHandler {
+                    connectionHandler.sendTraffic(SendMessageRequest(sendMessageBox.textField.text))
+                    sendMessageBox.textField.clear()
+                }
+
                 stage = Stage()
                 stage.scene = Scene(root)
                 stage.show()

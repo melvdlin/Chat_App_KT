@@ -37,6 +37,7 @@ object Client {
         }
         started = true
         this.plugins = plugins
+        Platform.setImplicitExit(false)
         Application.launch(ClientFXApp::class.java)
     }
 
