@@ -22,8 +22,10 @@ class ChatMessageListCell : ListCell<ChatMessage>() {
     }
 
     private fun configureBoxes() {
-        messageBox.padding = Insets(5.0, 0.0, 5.0, 0.0)
-        titleBox.padding = Insets(0.0, 5.0, 0.0, 5.0)
+//        messageBox.padding = Insets(5.0, 0.0, 5.0, 0.0)
+//        titleBox.padding = Insets(0.0, 5.0, 0.0, 0.0)
+        timestamp.padding = Insets(0.0, 0.0, 0.0, 5.0)
+        sender.isUnderline = true
     }
 
     private fun assemble() {
@@ -38,7 +40,9 @@ class ChatMessageListCell : ListCell<ChatMessage>() {
         if (empty) {
             clearContent()
         } else {
-            addContent(msg!!)
+            msg?.let {
+                addContent(msg)
+            }
         }
     }
 

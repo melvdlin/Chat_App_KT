@@ -2,6 +2,7 @@ package org.melvdlin.chat_app_kt.util
 
 import org.melvdlin.chat_app_kt.plugins.Plugin
 import org.melvdlin.chat_app_kt.traffic.Traffic
+import org.melvdlin.chat_app_kt.traffic.server.MessageBroadcast
 import org.melvdlin.chat_app_kt.traffic.server.ServerTraffic
 import java.io.ObjectOutputStream
 import java.net.Socket
@@ -27,7 +28,8 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         incomingTrafficHandler.start()
         ObjectOutputStream(socket.getOutputStream()).use {
             while (!isInterrupted || !trafficQueue.isEmpty()) {
-                it.writeObject(trafficQueue.take())
+                val traffic = trafficQueue.take()
+                it.writeObject(traffic)
             }
         }
 

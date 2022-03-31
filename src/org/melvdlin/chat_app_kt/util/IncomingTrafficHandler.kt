@@ -17,8 +17,8 @@ class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), 
             while (!isInterrupted) {
                 traffic = it.readObject() as Traffic
                 synchronized(lock) {
-                    onTrafficReceivedListeners.forEach {
-                        it(traffic)
+                    onTrafficReceivedListeners.forEach { listener ->
+                        listener(traffic)
                     }
                 }
             }

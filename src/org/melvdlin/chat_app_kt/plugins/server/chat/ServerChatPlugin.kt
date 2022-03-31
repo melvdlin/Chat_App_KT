@@ -8,15 +8,9 @@ import java.util.concurrent.locks.ReentrantLock
 class ServerChatPlugin : ServerPlugin {
 
     private val messageLog = MessageLog()
-    private val broadcastTo = mutableListOf<ChatterConnection>()
     private val lock = ReentrantLock()
 
     override fun onServerStartup() {
-        messageLog.addOnMessageAddedListener { msg ->
-            broadcastTo.forEach { chatterConnection ->
-                chatterConnection.sendMessage(msg)
-            }
-        }
     }
 
     override fun onConnectionEstablished(
@@ -25,7 +19,6 @@ class ServerChatPlugin : ServerPlugin {
     ) {
         synchronized(lock) {
             val chatterConnection = ChatterConnection(messageLog, connectionHandler)
-            broadcastTo += chatterConnection
             messageLog.addOnMessageAddedListener { chatterConnection.sendMessage(it) }
             incomingTrafficHandler.addOnTrafficReceivedListener { chatterConnection.onTrafficReceived(it) }
         }

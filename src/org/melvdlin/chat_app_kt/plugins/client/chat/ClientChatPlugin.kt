@@ -1,12 +1,19 @@
 package org.melvdlin.chat_app_kt.plugins.client.chat
 
+import javafx.application.Application
 import javafx.application.Platform
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.event.EventHandler
+import javafx.geometry.Pos
 import javafx.scene.Scene
+import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.ListView
+import javafx.scene.layout.HBox
+import javafx.scene.layout.Priority
+import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import javafx.util.Callback
@@ -27,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 class ClientChatPlugin : ClientPlugin {
 
-    private var messageLog : ObservableList<ChatMessage> = FXCollections.observableList(listOf())
+    private var messageLog : ObservableList<ChatMessage> = FXCollections.observableList(mutableListOf())
     private lateinit var stage : Stage
 
     private val lock = ReentrantLock()
@@ -39,17 +46,49 @@ class ClientChatPlugin : ClientPlugin {
         incomingTrafficHandler : IncomingTrafficHandler,
     ) {
         synchronized(lock) {
+            val viewMessageLog : ObservableList<ChatMessage> = FXCollections.observableList(mutableListOf())
+
             val root = VBox()
             val infoLabel = Label()
-            val messageBox = ListView(messageLog)
+            val topBarSpacer = Region()
+            val disconnectButton = Button("Disconnect")
+            val topBar = HBox()
+            val messageBox = ListView(viewMessageLog)
             val feedbackLabel = Label()
             val sendMessageBox = TextEntryBox(true, "Send", "Send a message...")
 
+            messageLog.addListener( ListChangeListener {
+                while (it.next()) {
+                    if (it.wasAdded()) {
+                        Platform.runLater {
+                            viewMessageLog.addAll(it.from, it.addedSubList)
+                        }
+                    }
+                    if (it.wasRemoved()) {
+                        Platform.runLater {
+                            viewMessageLog.removeAll(it.removed)
+                        }
+                    }
+                    messageBox.scrollTo(messageBox.items.lastIndex)
+                }
+            } )
+
             Platform.runLater {
-                root.children += infoLabel
+                root.children += topBar
                 root.children += messageBox
                 root.children += feedbackLabel
                 root.children += sendMessageBox
+
+                topBar.children += infoLabel
+                topBar.children += topBarSpacer
+                topBar.children += disconnectButton
+
+                HBox.setHgrow(topBarSpacer, Priority.ALWAYS)
+                disconnectButton.onAction = EventHandler{
+                    connectionHandler.close()
+                    Platform.exit()
+                }
+
                 messageBox.cellFactory = Callback { ChatMessageListCell() }
                 sendMessageBox.submitButton.onAction = EventHandler {
                     connectionHandler.sendTraffic(SendMessageRequest(sendMessageBox.textField.text))
@@ -59,6 +98,7 @@ class ClientChatPlugin : ClientPlugin {
                 stage = Stage()
                 stage.scene = Scene(root)
                 stage.show()
+                sendMessageBox.textField.requestFocus()
                 //TODO("Implement actual application logic")
             }
             incomingTrafficHandler.addOnTrafficReceivedListener {
@@ -77,7 +117,10 @@ class ClientChatPlugin : ClientPlugin {
                         messageLog.addAll(it.messageLog)
                     }
                     is MessageBroadcast -> {
-                        messageLog += it.msg
+                        println(it.msg.body)
+                        Platform.runLater {
+                            messageLog += it.msg
+                        }
                     }
                 }
             }
