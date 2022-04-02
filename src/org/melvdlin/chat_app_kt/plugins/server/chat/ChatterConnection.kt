@@ -92,7 +92,7 @@ class ChatterConnection(private val messageLog : MessageLog, private val connect
                     )
                     connectionHandler.close()
                 } else {
-                    messageLog.addMessage(ChatMessage(chatterName!!, traffic.msg, System.currentTimeMillis()))
+                    messageLog.addMessage(chatterName!!, traffic.msg)
                     connectionHandler.sendTraffic(OkResponse(traffic))
                 }
             }

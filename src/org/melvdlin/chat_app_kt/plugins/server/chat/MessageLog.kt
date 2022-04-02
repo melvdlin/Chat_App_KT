@@ -1,16 +1,18 @@
 package org.melvdlin.chat_app_kt.plugins.server.chat
 
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.min
 
 class MessageLog {
 
-    private val log = mutableListOf<ChatMessage>()
+    private val log : MutableList<ChatMessage> = LinkedList()
     private val onMessageAddedListeners = mutableListOf<(ChatMessage) -> Unit>()
     private val lock = ReentrantLock()
 
-    fun addMessage(msg : ChatMessage) {
+    fun addMessage(sender : String, body : String) {
         synchronized(lock) {
+            val msg = ChatMessage(sender, body, System.currentTimeMillis())
             log += msg
             onMessageAddedListeners.forEach { it(msg) }
         }

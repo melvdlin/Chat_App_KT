@@ -22,6 +22,8 @@ fun main() {
 
 val lock = ReentrantLock()
 
+val someString : String by lazy { return@lazy "deez" }
+
 fun somefun() : Int {
     synchronized(lock) {
         return 5
