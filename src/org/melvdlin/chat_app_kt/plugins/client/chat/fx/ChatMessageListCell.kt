@@ -5,7 +5,12 @@ import javafx.scene.control.Label
 import javafx.scene.control.ListCell
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
+import javafx.scene.text.Font
+import javafx.scene.text.FontPosture
+import javafx.scene.text.FontWeight
 import org.melvdlin.chat_app_kt.plugins.server.chat.ChatMessage
+import org.melvdlin.chat_app_kt.plugins.server.chat.SystemMessage
 import java.time.Instant
 import java.time.ZoneId
 
@@ -57,5 +62,15 @@ class ChatMessageListCell : ListCell<ChatMessage>() {
         timestamp.text = Instant.ofEpochMilli(msg.timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime().toString()
         body.text = msg.body
         graphic = messageBox
+
+        if (msg is SystemMessage) {
+            sender.font = Font.font(sender.font.family, FontWeight.BOLD, FontPosture.REGULAR, sender.font.size)
+            if (msg.error) {
+                val errorColor = Color.web(SystemMessage.defaultErrorColor)
+                sender.textFill = errorColor
+                body.textFill = errorColor
+                timestamp.textFill = errorColor
+            }
+        }
     }
 }

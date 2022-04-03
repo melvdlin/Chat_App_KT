@@ -11,19 +11,20 @@ class ConnectionManager(private val plugins : Collection<ServerPlugin>) {
     private val lock = ReentrantLock()
 
     fun dispatch(client : Socket) {
-        synchronized(lock) {
-            val handler = ConnectionHandler(client, plugins) {
-                synchronized(lock) {
-                    handlers.remove(Thread.currentThread() as ConnectionHandler)
+        synchronized(handlers) {
+            val handler = ConnectionHandler(client, plugins)
+            handler.addOnClosingListener {
+                synchronized(handlers) {
+                    handlers -= handler
                 }
             }
-            handlers.add(handler)
+            handlers += handler
             handler.start()
         }
     }
 
     fun broadcastServerInterrupted() {
-        synchronized(lock) {
+        synchronized(handlers) {
             handlers.forEach {
                 it.interrupt()
             }

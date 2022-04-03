@@ -15,11 +15,15 @@ class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), 
         ObjectInputStream(inputStream).use {
             var traffic : Traffic
             while (!isInterrupted) {
-                traffic = it.readObject() as Traffic
-                synchronized(lock) {
-                    onTrafficReceivedListeners.forEach { listener ->
-                        listener(traffic)
+                try {
+                    traffic = it.readObject() as Traffic
+                    synchronized(lock) {
+                        onTrafficReceivedListeners.forEach { listener ->
+                            listener(traffic)
+                        }
                     }
+                } catch (e : InterruptedException) {
+                    interrupt()
                 }
             }
         }

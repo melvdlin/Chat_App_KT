@@ -22,6 +22,11 @@ import java.util.concurrent.locks.ReentrantLock
 
 object Client {
 
+    object Constants {
+        const val timeoutMillis = 15000L
+        const val backlog = -1
+    }
+
     private var plugins : Collection<ClientPlugin> = mutableListOf()
 
     private var started = false
@@ -47,7 +52,8 @@ object Client {
 
     fun onConnected(server : Socket, onConnectionClosing : () -> Unit) {
         synchronized(connectionLock) {
-            connection = ConnectionHandler(server, plugins, onConnectionClosing)
+            connection = ConnectionHandler(server, plugins)
+            connection.addOnClosingListener(onConnectionClosing)
             connection.start()
         }
     }

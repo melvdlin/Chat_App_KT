@@ -12,9 +12,10 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.schedule
 
 
-class ConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>, private val onClosing : () -> Unit) : Thread(), AutoCloseable {
+class ConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>) : Thread(), AutoCloseable {
 
     private var closing = false
+    private val onClosingListeners : MutableList<() -> Unit> = mutableListOf()
 
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
     private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream())
@@ -65,6 +66,18 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         trafficQueue.put(traffic)
     }
 
+    fun addOnClosingListener(listener : () -> Unit) {
+        synchronized(onClosingListeners) {
+            onClosingListeners += listener
+        }
+    }
+
+    fun removeOnClosingListener(listener : () -> Unit) {
+        synchronized(onClosingListeners) {
+            onClosingListeners -= listener
+        }
+    }
+
     override fun run() {
 
         plugins.forEach { it.onConnectionEstablished(this, incomingTrafficHandler) }
@@ -77,20 +90,26 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
             }
         }
 
-        onClosing()
         socket.close()
     }
 
     override fun close() {
+        synchronized(onClosingListeners) {
+            onClosingListeners.forEach { it() }
+        }
         synchronized(closing) {
             closing = true
-            incomingTrafficHandler.close()
-            synchronized(requestTimer) {
-                if (requestTimerIsInitialized) {
-                    requestTimer.cancel()
-                }
-            }
-            interrupt()
         }
+        synchronized(requestTimer) {
+            if (requestTimerIsInitialized) {
+                requestTimer.cancel()
+            }
+        }
+        incomingTrafficHandler.close()
+        super.interrupt()
+    }
+
+    override fun interrupt() {
+        close()
     }
 }
