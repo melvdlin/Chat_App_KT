@@ -9,12 +9,10 @@ import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
-import org.melvdlin.chat_app_kt.chatplugin.shared.ChatMessage
-import org.melvdlin.chat_app_kt.chatplugin.shared.SystemMessage
 import java.time.Instant
 import java.time.ZoneId
 
-class ChatMessageListCell : ListCell<ChatMessage>() {
+class DisplayableMessageListCell : ListCell<DisplayableMessage>() {
     private val messageBox = VBox()
     private val titleBox = HBox()
     private val sender = Label()
@@ -40,7 +38,7 @@ class ChatMessageListCell : ListCell<ChatMessage>() {
         titleBox.children += timestamp
     }
 
-    override fun updateItem(msg : ChatMessage?, empty : Boolean) {
+    override fun updateItem(msg : DisplayableMessage?, empty : Boolean) {
         super.updateItem(item, empty)
         if (empty) {
             clearContent()
@@ -56,7 +54,7 @@ class ChatMessageListCell : ListCell<ChatMessage>() {
         graphic = null
     }
 
-    private fun addContent(msg : ChatMessage) {
+    private fun addContent(msg : DisplayableMessage) {
         text = null
         sender.text = msg.sender
         timestamp.text = Instant.ofEpochMilli(msg.timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime().toString()

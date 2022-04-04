@@ -18,4 +18,16 @@ class ClientChatPlugin : ClientPlugin {
     }
 
     override fun onConnectionClosing() { }
+
+    fun exit() {
+
+    }
+
+    fun login(username : String, onFailed : () -> Unit = { }) {
+
+    }
+
+    fun sendMessage(body : String, onFailed : () -> Unit = { }) {
+
+    }
 }
