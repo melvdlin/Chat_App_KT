@@ -15,6 +15,7 @@ import kotlin.concurrent.schedule
 class ConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>) : Thread(), AutoCloseable {
 
     private var closing = false
+    private val closingLock = Any()
     private val onClosingListeners : MutableList<() -> Unit> = mutableListOf()
 
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
@@ -41,7 +42,7 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
 
 
     fun sendTimeoutRequest(request : Request, timeoutMillis : Long, responseHandler : (Response) -> Unit, timeoutHandler : () -> Unit) {
-        synchronized(closing) {
+        synchronized(closingLock) {
             if (closing) {
                 throw IllegalStateException()
             }
@@ -101,7 +102,7 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         synchronized(onClosingListeners) {
             onClosingListeners.forEach { it() }
         }
-        synchronized(closing) {
+        synchronized(closingLock) {
             closing = true
         }
         synchronized(requestTimer) {
