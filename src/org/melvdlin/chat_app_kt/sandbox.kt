@@ -1,4 +1,4 @@
-package org.melvdlin.chat_app_kt.testbed
+package org.melvdlin.chat_app_kt
 
 import java.util.concurrent.locks.ReentrantLock
 
