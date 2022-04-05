@@ -85,8 +85,12 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         incomingTrafficHandler.start()
         ObjectOutputStream(socket.getOutputStream()).use {
             while (!isInterrupted || !trafficQueue.isEmpty()) {
-                val traffic = trafficQueue.take()
-                it.writeObject(traffic)
+                try {
+                    val traffic = trafficQueue.take()
+                    it.writeObject(traffic)
+                } catch (_ : InterruptedException) {
+                    interrupt()
+                }
             }
         }
 
