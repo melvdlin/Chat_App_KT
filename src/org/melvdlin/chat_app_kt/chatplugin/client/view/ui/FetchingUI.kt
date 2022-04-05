@@ -5,7 +5,10 @@ import javafx.scene.control.Label
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 
-class FetchingUI : Stage() {
+class FetchingUI : ManagedStage() {
+    
+    override val keepOpen = false
+
     val root = VBox()
     val infoLabel = Label("Fetching message log...")
 

@@ -10,32 +10,38 @@ import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 
-class ErrorPopup(val fatal : Boolean, val info : String, val onConfirmed : () -> Unit = {}) : Stage() {
+class ErrorPopup(
+    val fatal : Boolean,
+    val info : String,
+    val onConfirmed : () -> Unit = {}
+) : ManagedStage() {
 
-        private val root = VBox()
-        private val topLabel = Label("A${if (fatal) " fatal" else "n"} error occured:")
-        private val infoLabel = Label(info)
-        private val okButtonBox = HBox()
-        private val verticalSpacer = Region()
-        private val okButtonSpacer1 = Region()
-        private val okButtonSpacer2 = Region()
-        private val okButton = Button("Ok")
+    override val keepOpen = true
 
-        init {
-            title = "${if (fatal) "Fatal " else ""}Error"
+    private val root = VBox()
+    private val topLabel = Label("A${if (fatal) " fatal" else "n"} error occured:")
+    private val infoLabel = Label(info)
+    private val okButtonBox = HBox()
+    private val verticalSpacer = Region()
+    private val okButtonSpacer1 = Region()
+    private val okButtonSpacer2 = Region()
+    private val okButton = Button("Ok")
 
-            scene = Scene(root)
+    init {
+        title = "${if (fatal) "Fatal " else ""}Error"
 
-            root.children.addAll(topLabel, infoLabel, verticalSpacer, okButtonBox)
-            okButtonBox.children.addAll(okButtonSpacer1, okButton, okButtonSpacer2)
+        scene = Scene(root)
 
-            VBox.setVgrow(verticalSpacer, Priority.ALWAYS)
-            HBox.setHgrow(okButtonSpacer1, Priority.ALWAYS)
-            HBox.setHgrow(okButtonSpacer2, Priority.ALWAYS)
+        root.children.addAll(topLabel, infoLabel, verticalSpacer, okButtonBox)
+        okButtonBox.children.addAll(okButtonSpacer1, okButton, okButtonSpacer2)
 
-            okButton.onAction = EventHandler {
-                hide()
-                onConfirmed()
-            }
+        VBox.setVgrow(verticalSpacer, Priority.ALWAYS)
+        HBox.setHgrow(okButtonSpacer1, Priority.ALWAYS)
+        HBox.setHgrow(okButtonSpacer2, Priority.ALWAYS)
+
+        okButton.onAction = EventHandler {
+            hide()
+            onConfirmed()
         }
     }
+}

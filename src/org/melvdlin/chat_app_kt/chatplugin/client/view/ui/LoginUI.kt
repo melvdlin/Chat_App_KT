@@ -9,7 +9,13 @@ import org.melvdlin.chat_app_kt.chatplugin.client.ClientChatPlugin
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
 
-class LoginUI(private val controller : ClientChatPlugin, private val model : Model) : Stage() {
+class LoginUI(
+    private val controller : ClientChatPlugin,
+    private val model : Model)
+    : ManagedStage() {
+
+    override val keepOpen = false
+
     val root  = HBox()
     val nameEntryBox = TextEntryBox(true, "Login", "Enter a username...")
     val exitButton = Button("Exit")

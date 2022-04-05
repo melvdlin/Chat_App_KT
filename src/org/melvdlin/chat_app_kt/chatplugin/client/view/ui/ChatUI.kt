@@ -21,7 +21,13 @@ import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.SystemMessage
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
 import java.util.LinkedList
 
-class ChatUI(private val controller : ClientChatPlugin, private val model : Model) : Stage() {
+class ChatUI(
+    private val controller : ClientChatPlugin,
+    private val model : Model
+    ) : ManagedStage() {
+
+    override val keepOpen = false
+
     val root = VBox()
 
     val topBar = HBox()
