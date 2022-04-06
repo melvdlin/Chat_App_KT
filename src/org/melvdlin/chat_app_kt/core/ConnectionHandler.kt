@@ -21,8 +21,9 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
     private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream())
 
+    private val timerLock = Any()
     private val requestTimer : Timer by lazy {
-        synchronized(requestTimer) {
+        synchronized(timerLock) {
             requestTimerIsInitialized = true
             Timer(true)
         }
@@ -34,7 +35,8 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         incomingTrafficHandler.addOnTrafficReceivedListener {
             synchronized(openRequests) {
                 if (it is Response) {
-                    openRequests.remove(it.to)?.invoke(it)
+                    openRequests.remove(it.to)?.
+                    invoke(it)
                 }
             }
         }
@@ -105,7 +107,7 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         synchronized(closingLock) {
             closing = true
         }
-        synchronized(requestTimer) {
+        synchronized(timerLock) {
             if (requestTimerIsInitialized) {
                 requestTimer.cancel()
             }

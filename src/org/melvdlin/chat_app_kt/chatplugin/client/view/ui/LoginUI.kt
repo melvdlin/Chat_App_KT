@@ -1,5 +1,6 @@
 package org.melvdlin.chat_app_kt.chatplugin.client.view.ui
 
+import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.Scene
 import javafx.scene.control.Button
@@ -30,11 +31,13 @@ class LoginUI(
         }
 
         nameEntryBox.submitButton.onAction = EventHandler {
-            val username = nameEntryBox.text
+            val username = nameEntryBox.textField.text
             nameEntryBox.submitButton.isDisable = true
             controller.login(username) {
-                ErrorPopup(false, "Login as $username failed.")
-                nameEntryBox.submitButton.isDisable = false
+                Platform.runLater {
+                    ErrorPopup(false, "Login as $username failed.").show()
+                    nameEntryBox.submitButton.isDisable = false
+                }
             }
         }
     }

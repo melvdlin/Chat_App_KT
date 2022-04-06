@@ -20,7 +20,7 @@ class ServerChatPlugin : ServerPlugin {
         synchronized(lock) {
             val chatterConnection = ChatterConnection(messageLog, connectionHandler)
             messageLog.addOnMessageAddedListener { chatterConnection.sendMessage(it) }
-            incomingTrafficHandler.addOnTrafficReceivedListener { chatterConnection.onTrafficReceived(it) }
+            incomingTrafficHandler.addOnTrafficReceivedListener{chatterConnection.onTrafficReceived(it)}
         }
     }
 

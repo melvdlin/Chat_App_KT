@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock
 object Client {
 
     object Constants {
-        const val timeoutMillis = 15000L
+        const val timeoutMillis = 5000L
         const val backlog = -1
     }
 

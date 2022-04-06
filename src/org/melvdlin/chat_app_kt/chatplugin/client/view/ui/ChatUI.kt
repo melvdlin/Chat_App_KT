@@ -56,7 +56,7 @@ class ChatUI(
         }
 
         messageEntryBox.submitButton.onAction = EventHandler {
-            val body = messageEntryBox.text
+            val body = messageEntryBox.textField.text
             messageEntryBox.clear()
 
             controller.sendMessage(body) {

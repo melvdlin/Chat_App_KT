@@ -10,7 +10,6 @@ class TextEntryBox(disableWhenBlank : Boolean) : HBox() {
 
     val textField = TextField()
     val submitButton = Button()
-    val text = textField.text
 
 
     constructor(disableWhenBlank : Boolean, buttonText : String) : this(disableWhenBlank) {
