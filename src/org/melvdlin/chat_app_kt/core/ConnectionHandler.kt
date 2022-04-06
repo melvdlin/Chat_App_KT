@@ -86,6 +86,10 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         plugins.forEach { it.onConnectionEstablished(this, incomingTrafficHandler) }
 
         incomingTrafficHandler.start()
+
+        TODO("Move outgoing traffic handling into its own thread class")
+        // so plugin.onConnectionEstablished() does not block creation of OOS
+        // which results in the creation of the OIS on the other side being blocked
         ObjectOutputStream(socket.getOutputStream()).use {
             while (!isInterrupted || !trafficQueue.isEmpty()) {
                 try {
