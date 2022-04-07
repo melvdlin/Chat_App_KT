@@ -7,11 +7,12 @@ import javafx.scene.control.Button
 import javafx.scene.layout.HBox
 import javafx.stage.Stage
 import org.melvdlin.chat_app_kt.chatplugin.client.ClientChatPlugin
+import org.melvdlin.chat_app_kt.chatplugin.client.Controller
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
 
 class LoginUI(
-    private val controller : ClientChatPlugin,
+    private val controller : Controller,
     private val model : Model)
     : ManagedStage() {
 

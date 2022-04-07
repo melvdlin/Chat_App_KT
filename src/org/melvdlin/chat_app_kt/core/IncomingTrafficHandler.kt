@@ -1,8 +1,10 @@
 package org.melvdlin.chat_app_kt.core
 
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
+import java.io.EOFException
 import java.io.InputStream
 import java.io.ObjectInputStream
+import java.net.SocketException
 import java.util.concurrent.locks.ReentrantLock
 
 class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), AutoCloseable {
@@ -21,7 +23,9 @@ class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), 
                             listener(traffic)
                         }
                     }
-                } catch (e : InterruptedException) {
+                } catch (_ : SocketException) {
+                    interrupt()
+                } catch (_ : EOFException) {
                     interrupt()
                 }
             }

@@ -14,6 +14,7 @@ import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import org.melvdlin.chat_app_kt.chatplugin.client.ClientChatPlugin
+import org.melvdlin.chat_app_kt.chatplugin.client.Controller
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.DisplayableChatMessage
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.DisplayableMessage
@@ -22,7 +23,7 @@ import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
 import java.util.LinkedList
 
 class ChatUI(
-    private val controller : ClientChatPlugin,
+    private val controller : Controller,
     private val model : Model
     ) : ManagedStage() {
 

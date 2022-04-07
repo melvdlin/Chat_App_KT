@@ -1,5 +1,6 @@
 package org.melvdlin.chat_app_kt.chatplugin.client.view.ui
 
+import javafx.application.Platform
 import javafx.stage.Stage
 
 class StageManager(vararg stages : ManagedStage) {
@@ -14,10 +15,12 @@ class StageManager(vararg stages : ManagedStage) {
     fun removeAll(stages : Collection<ManagedStage>) = synchronized(this.stages) { this.stages.removeAll(stages) }
 
     fun closeStages() {
-        synchronized(stages) {
-            stages.forEach {
-                if (!it.keepOpen) {
-                    it.close()
+        Platform.runLater {
+            synchronized(stages) {
+                stages.forEach {
+                    if (!it.keepOpen) {
+                        it.close()
+                    }
                 }
             }
         }

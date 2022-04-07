@@ -17,11 +17,11 @@ import java.util.concurrent.SynchronousQueue
 class ClientChatPlugin : ClientPlugin {
 
     private val model = Model()
-    private val stageManager = StageManager()
     private var connectionHandler : ConnectionHandler? = null
     private var incomingTrafficHandler : IncomingTrafficHandler? = null
 
-    private val messageQueue : SynchronousQueue<Any> = SynchronousQueue()
+    private val controllerLock = Any()
+    private var controller : Controller? = null
 
     override fun onClientStartup() { }
 
@@ -32,89 +32,15 @@ class ClientChatPlugin : ClientPlugin {
         this.connectionHandler = connectionHandler
         this.incomingTrafficHandler = incomingTrafficHandler
 
-        incomingTrafficHandler.addOnTrafficReceivedListener(this::onTrafficReceived)
-
-        lateinit var loginUI : LoginUI
-        lateinit var fetchingUI : FetchingUI
-        lateinit var chatUI : ChatUI
-
-        Platform.runLater {
-            loginUI = LoginUI(this, model)
-            fetchingUI = FetchingUI()
-            chatUI = ChatUI(this, model)
-            stageManager.addAll(loginUI, fetchingUI, chatUI)
-
-            messageQueue.offer(Any())
-        }
-
-        try {
-            messageQueue.take()
-
-            Platform.runLater(loginUI::show)
-            messageQueue.take()
-
-            Platform.runLater(fetchingUI::show)
-            messageQueue.take()
-
-            Platform.runLater(chatUI::show)
-            messageQueue.take()
-
-        } catch (_ : InterruptedException) {
-            Thread.currentThread().interrupt()
-        } finally {
-            synchronized(model) {
-                model.appState = AppState.TERMINATED
-            }
+        synchronized(controllerLock) {
+            controller = Controller(connectionHandler, incomingTrafficHandler, model)
+            controller!!.start()
         }
     }
 
     override fun onConnectionClosing() {
-        stageManager.closeStages()
-    }
-
-    fun exit() {
-        connectionHandler?.close()
-    }
-
-    fun login(username : String, onFailed : () -> Unit = { }) {
-        connectionHandler?.sendTimeoutRequest(
-            LoginRequest(username),
-            Client.Constants.timeoutMillis,
-            {
-                if (it !is OkResponse || !messageQueue.offer(Any())) {
-                    onFailed()
-                }
-            },
-            onFailed
-        )
-    }
-
-    fun sendMessage(body : String, onFailed : () -> Unit = { }) {
-
-    }
-
-    private fun onTrafficReceived(traffic : Traffic) {
-        if (traffic !is ServerTraffic) return
-
-        when (traffic) {
-            is ErrorNotification -> {
-                synchronized(model) {
-                    model.appState = AppState.ERROR
-                }
-                val errorPopup = ErrorPopup(traffic.fatal, traffic.info)
-                stageManager.add(errorPopup)
-                Platform.runLater(errorPopup::show)
-                exit()
-            }
-
-            is MessageBroadcast -> {
-                synchronized(model) {
-                    if (model.appState == AppState.CHATTING) {
-                        model.messageLog += traffic.msg
-                    }
-                }
-            }
+        synchronized(controllerLock) {
+            controller?.onConnectionClosing()
         }
     }
-
 }

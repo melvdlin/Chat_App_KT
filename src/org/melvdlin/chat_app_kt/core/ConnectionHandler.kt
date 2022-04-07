@@ -59,12 +59,14 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
                 }
             }
         }
-
+        sendTraffic(request)
     }
 
     fun sendTraffic(traffic : Traffic) {
-        if (closing) {
-            throw IllegalStateException()
+        synchronized(closingLock) {
+            if (closing) {
+                throw IllegalStateException()
+            }
         }
         trafficQueue.put(traffic)
     }
@@ -87,9 +89,7 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
 
         incomingTrafficHandler.start()
 
-        TODO("Move outgoing traffic handling into its own thread class")
-        // so plugin.onConnectionEstablished() does not block creation of OOS
-        // which results in the creation of the OIS on the other side being blocked
+        //TODO("Move outgoing traffic handling into its own thread class")
         ObjectOutputStream(socket.getOutputStream()).use {
             while (!isInterrupted || !trafficQueue.isEmpty()) {
                 try {
