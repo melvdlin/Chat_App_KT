@@ -7,7 +7,10 @@ import java.io.ObjectInputStream
 import java.net.SocketException
 import java.util.concurrent.locks.ReentrantLock
 
-class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), AutoCloseable {
+class IncomingTrafficHandler(
+    private val inputStream : InputStream,
+    private val closeConnection : () -> Unit
+) : Thread(), AutoCloseable {
 
     private val onTrafficReceivedListeners = mutableListOf<(Traffic) -> Unit>()
     private val lock = ReentrantLock()
@@ -30,6 +33,7 @@ class IncomingTrafficHandler(private val inputStream : InputStream) : Thread(), 
                 }
             }
         }
+        closeConnection()
     }
 
     fun addOnTrafficReceivedListener(listener : (Traffic) -> Unit) {

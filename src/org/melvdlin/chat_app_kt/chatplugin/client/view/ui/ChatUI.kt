@@ -1,5 +1,6 @@
 package org.melvdlin.chat_app_kt.chatplugin.client.view.ui
 
+import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -13,13 +14,11 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
+import javafx.util.Callback
 import org.melvdlin.chat_app_kt.chatplugin.client.ClientChatPlugin
 import org.melvdlin.chat_app_kt.chatplugin.client.Controller
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
-import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.DisplayableChatMessage
-import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.DisplayableMessage
-import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.SystemMessage
-import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
+import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.*
 import java.util.LinkedList
 
 class ChatUI(
@@ -56,6 +55,8 @@ class ChatUI(
             controller.exit()
         }
 
+        messageLogView.cellFactory = Callback { DisplayableMessageListCell() }
+
         messageEntryBox.submitButton.onAction = EventHandler {
             val body = messageEntryBox.textField.text
             messageEntryBox.clear()
@@ -66,14 +67,24 @@ class ChatUI(
         }
 
         model.messageLog.addListener(ListChangeListener {
-            if (it.wasAdded()) {
-                it.addedSubList.forEach { msg ->
-                    messageLog += DisplayableChatMessage(msg)
+            println("deez")
+            while (it.next()) {
+                if (it.wasAdded()) {
+                    it.addedSubList.forEach { msg ->
+                        Platform.runLater {
+                            messageLog += DisplayableChatMessage(msg)
+                        }
+                    }
                 }
-            }
-            if (it.wasRemoved()) {
-                messageLog.removeIf { msg ->
-                    msg is DisplayableChatMessage && it.removed.contains(msg.msg)
+                if (it.wasRemoved()) {
+                    Platform.runLater {
+                        messageLog.removeIf { msg ->
+                            msg is DisplayableChatMessage && it.removed.contains(msg.msg)
+                        }
+                    }
+                }
+                Platform.runLater {
+                    messageLogView.scrollTo(messageLog.lastIndex)
                 }
             }
         })

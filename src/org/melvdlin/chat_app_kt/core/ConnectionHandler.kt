@@ -6,6 +6,7 @@ import org.melvdlin.chat_app_kt.core.traffic.Response
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
 import java.io.ObjectOutputStream
 import java.net.Socket
+import java.net.SocketException
 import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -18,8 +19,11 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
     private val closingLock = Any()
     private val onClosingListeners : MutableList<() -> Unit> = mutableListOf()
 
+    private var closingInitiated = false
+    private val closingInitiatedLock = Any()
+
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
-    private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream())
+    private val incomingTrafficHandler = IncomingTrafficHandler(socket.getInputStream(), this::close)
 
     private val timerLock = Any()
     private val requestTimer : Timer by lazy {
@@ -90,21 +94,29 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
         incomingTrafficHandler.start()
 
         //TODO("Move outgoing traffic handling into its own thread class")
-        ObjectOutputStream(socket.getOutputStream()).use {
-            while (!isInterrupted || !trafficQueue.isEmpty()) {
-                try {
-                    val traffic = trafficQueue.take()
-                    it.writeObject(traffic)
-                } catch (_ : InterruptedException) {
-                    interrupt()
+        try {
+            ObjectOutputStream(socket.getOutputStream()).use {
+                while (!isInterrupted || !trafficQueue.isEmpty()) {
+                    try {
+                        val traffic = trafficQueue.take()
+                        it.writeObject(traffic)
+                    } catch (_ : InterruptedException) {
+                        interrupt()
+                    }
                 }
             }
+        } catch (_ : SocketException) {
+            close()
         }
 
         socket.close()
     }
 
     override fun close() {
+        synchronized(closingInitiatedLock) {
+            if (closingInitiated) return
+            else closingInitiated = true
+        }
         synchronized(onClosingListeners) {
             onClosingListeners.forEach { it() }
         }
@@ -117,10 +129,6 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
             }
         }
         incomingTrafficHandler.close()
-        super.interrupt()
-    }
-
-    override fun interrupt() {
-        close()
+        interrupt()
     }
 }

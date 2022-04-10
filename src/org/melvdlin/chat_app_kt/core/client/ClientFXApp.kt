@@ -4,6 +4,7 @@ import javafx.application.Application
 import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.scene.Scene
+import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
@@ -35,6 +36,7 @@ class ClientFXApp : Application() {
     }
 
     private fun buildConnectScreen() {
+
         val root = VBox()
         primaryScene.root = root
 
@@ -104,6 +106,14 @@ class ClientFXApp : Application() {
         }
         portEntryBox.submitButton.onAction = EventHandler {
             submitPort()
+        }
+
+        val exitButton = Button("Exit")
+        portEntryBox.children += exitButton
+
+        exitButton.onAction = EventHandler {
+            primaryStage.hide()
+            Platform.exit()
         }
     }
 
