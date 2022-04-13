@@ -67,7 +67,6 @@ class ChatUI(
         }
 
         model.messageLog.addListener(ListChangeListener {
-            println("deez")
             while (it.next()) {
                 if (it.wasAdded()) {
                     it.addedSubList.forEach { msg ->
