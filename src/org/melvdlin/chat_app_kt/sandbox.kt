@@ -1,42 +1,27 @@
-@file:Suppress("UNREACHABLE_CODE")
+@file:Suppress("UNREACHABLE_CODE", "UNUSED", "UNUSED_VARIABLE")
 
 package org.melvdlin.chat_app_kt
 
-import java.util.concurrent.locks.ReentrantLock
-
-val walker : StackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-
-class SomeClass(private val anotherInstance : AnotherClass) {
-    fun someFun() {
-        println(anotherInstance.anotherFun())
-    }
-}
-
-class AnotherClass {
-    fun anotherFun() : String = walker.callerClass.simpleName
-}
+import kotlin.reflect.KProperty0
+import kotlin.reflect.jvm.isAccessible
 
 fun main() {
-    println(somefun())
-    SomeClass(AnotherClass()).someFun()
-    val o = Any()
-    anotherfun(15, o)
-    anotherfun(25, o)
+    val someSand = BoxSand()
+
+//    println(someSand::lazy.isLazyInitialized)
 }
 
-val lock = ReentrantLock()
-
-val someString : String by lazy { return@lazy "deez" }
-
-fun somefun() : Int {
-    synchronized(lock) {
-        return 5
+class BoxSand {
+    val lazy : String by lazy {
+        "ayy"
     }
 }
 
-fun anotherfun(i : Int, o : Any) {
-    synchronized(o) {
-        return
-    }
-    println(i)
+val KProperty0<*>.isLazyInitialized : Boolean
+get() {
+    val originalAccessLevel = isAccessible
+    isAccessible = true
+    val retVal = (getDelegate() as Lazy<*>).isInitialized()
+    isAccessible = originalAccessLevel
+    return retVal
 }

@@ -8,8 +8,8 @@ import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.LoginRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.SendMessageRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.server.MessageBroadcast
 import org.melvdlin.chat_app_kt.chatplugin.traffic.server.responses.FetchMessageLogResponse
-import org.melvdlin.chat_app_kt.core.ConnectionHandler
-import org.melvdlin.chat_app_kt.core.IncomingTrafficHandler
+import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.deprecated.IncomingTrafficHandler
 import org.melvdlin.chat_app_kt.core.client.Client
 import org.melvdlin.chat_app_kt.core.traffic.ErrorNotification
 import org.melvdlin.chat_app_kt.core.traffic.Response

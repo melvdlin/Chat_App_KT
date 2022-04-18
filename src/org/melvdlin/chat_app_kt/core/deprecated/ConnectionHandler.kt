@@ -1,4 +1,4 @@
-package org.melvdlin.chat_app_kt.core
+package org.melvdlin.chat_app_kt.core.deprecated
 
 import org.melvdlin.chat_app_kt.core.plugin.Plugin
 import org.melvdlin.chat_app_kt.core.traffic.Request

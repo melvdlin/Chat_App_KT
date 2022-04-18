@@ -3,7 +3,7 @@ package org.melvdlin.chat_app_kt.core.client
 import javafx.application.Application
 import javafx.application.Platform
 import org.melvdlin.chat_app_kt.core.plugin.ClientPlugin
-import org.melvdlin.chat_app_kt.core.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
 import java.net.Socket
 import java.util.concurrent.locks.ReentrantLock
 

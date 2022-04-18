@@ -1,18 +1,8 @@
 package org.melvdlin.chat_app_kt.chatplugin.client
 
-import javafx.application.Platform
-import org.melvdlin.chat_app_kt.chatplugin.client.view.ui.*
-import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.LoginRequest
-import org.melvdlin.chat_app_kt.chatplugin.traffic.server.MessageBroadcast
 import org.melvdlin.chat_app_kt.core.plugin.ClientPlugin
-import org.melvdlin.chat_app_kt.core.ConnectionHandler
-import org.melvdlin.chat_app_kt.core.IncomingTrafficHandler
-import org.melvdlin.chat_app_kt.core.client.Client
-import org.melvdlin.chat_app_kt.core.traffic.ErrorNotification
-import org.melvdlin.chat_app_kt.core.traffic.Traffic
-import org.melvdlin.chat_app_kt.core.traffic.server.ServerTraffic
-import org.melvdlin.chat_app_kt.core.traffic.server.responses.OkResponse
-import java.util.concurrent.SynchronousQueue
+import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.deprecated.IncomingTrafficHandler
 
 class ClientChatPlugin : ClientPlugin {
 

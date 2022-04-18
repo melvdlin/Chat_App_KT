@@ -1,8 +1,8 @@
 package org.melvdlin.chat_app_kt.chatplugin.server
 
 import org.melvdlin.chat_app_kt.core.plugin.ServerPlugin
-import org.melvdlin.chat_app_kt.core.ConnectionHandler
-import org.melvdlin.chat_app_kt.core.IncomingTrafficHandler
+import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.deprecated.IncomingTrafficHandler
 import java.util.concurrent.locks.ReentrantLock
 
 class ServerChatPlugin : ServerPlugin {
