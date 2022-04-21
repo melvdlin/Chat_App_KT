@@ -3,7 +3,8 @@ package org.melvdlin.chat_app_kt.core.client
 import javafx.application.Application
 import javafx.application.Platform
 import org.melvdlin.chat_app_kt.core.plugin.ClientPlugin
-import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.netcode.impl.DefaultConnectionHandler
 import java.net.Socket
 import java.util.concurrent.locks.ReentrantLock
 
@@ -35,10 +36,10 @@ object Client {
         plugins.forEach(action)
     }
 
-    fun onConnected(server : Socket, onConnectionClosing : () -> Unit) {
+    fun onConnected(server : Socket, onConnectionClosed : () -> Unit) {
         synchronized(connectionLock) {
-            connection = ConnectionHandler(server, plugins)
-            connection.addOnClosingListener(onConnectionClosing)
+            connection = DefaultConnectionHandler(server, plugins)
+            connection.addOnClosedListener(onConnectionClosed)
             connection.start()
         }
     }

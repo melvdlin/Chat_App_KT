@@ -1,0 +1,38 @@
+how3disconnect:
+
+    change handler state to closing
+    set dcMode to SELF
+    send timeout disconnect request
+    
+    worker sends disconnect request:
+        on timeout or if response != ok set state to error and call onError,
+        if response == ok set state to closed and call onClosed
+    worker notices traffic queue empty and state == closing
+    leaves OOS.use{} block -> OOS is closed
+    if dcMode == other set state to closed and call onClosed
+    worker thread terminates
+    
+    onClosed/onError:
+        inHandler.close()
+        
+    inHandler.close():
+        set state to closing
+        interrupt worker
+        worker exits loop, closes OIS, sets state to closed
+        calls onClosed
+    
+    onClosed:
+        close socket
+
+how3bedisconnected:
+
+    incoming handler receives disconnect request
+    calls onDisconnectRequested
+
+    onDisconnectRequested:
+        outHandler.terminate
+    
+    outHandler.terminate:
+        set state to closing
+        set dcMode to other
+        send OK response

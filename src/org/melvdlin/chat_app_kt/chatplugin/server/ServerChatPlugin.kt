@@ -1,28 +1,27 @@
 package org.melvdlin.chat_app_kt.chatplugin.server
 
 import org.melvdlin.chat_app_kt.core.plugin.ServerPlugin
-import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
-import org.melvdlin.chat_app_kt.core.deprecated.IncomingTrafficHandler
-import java.util.concurrent.locks.ReentrantLock
+import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
 
 class ServerChatPlugin : ServerPlugin {
 
     private val messageLog = MessageLog()
-    private val lock = ReentrantLock()
+    private val lock = Any()
 
     override fun onServerStartup() {
     }
 
     override fun onConnectionEstablished(
         connectionHandler : ConnectionHandler,
-        incomingTrafficHandler : IncomingTrafficHandler,
     ) {
         synchronized(lock) {
             val chatterConnection = ChatterConnection(messageLog, connectionHandler)
             messageLog.addOnMessageAddedListener { chatterConnection.sendMessage(it) }
-            incomingTrafficHandler.addOnTrafficReceivedListener{chatterConnection.onTrafficReceived(it)}
+            connectionHandler.addOnTrafficReceivedListener{chatterConnection.onTrafficReceived(it)}
         }
     }
 
-    override fun onConnectionClosing() { }
+    override fun onConnectionClosed() = Unit
+
+    override fun onConnectionError() = Unit
 }

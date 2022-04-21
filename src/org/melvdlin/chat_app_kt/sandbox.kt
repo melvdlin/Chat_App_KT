@@ -6,7 +6,16 @@ import kotlin.reflect.KProperty0
 import kotlin.reflect.jvm.isAccessible
 
 fun main() {
-    val someSand = BoxSand()
+
+    try {
+        synchronized(Any()) {
+            throw Exception()
+        }
+    } catch (e : Exception) {
+        println("exception!")
+    }
+
+//    val someSand = BoxSand()
 
 //    println(someSand::lazy.isLazyInitialized)
 }

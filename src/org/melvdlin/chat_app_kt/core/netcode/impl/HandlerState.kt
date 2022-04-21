@@ -4,15 +4,17 @@ internal enum class HandlerState {
     UNINITIALIZED,
     IDLE,
     RUNNING,
+    CLOSING,
     CLOSED,
     ERROR;
 
-    fun ensureStates(vararg states : HandlerState) {
-        if (synchronized(this) { !states.contains(this) }) throw IllegalStateException()
+    fun ensureIsOneOf(vararg states : HandlerState) {
+        if (!states.contains(this))
+            throw IllegalStateException()
     }
 
-    fun ensureNotStates(vararg states : HandlerState) {
-        if (synchronized(this) { states.contains(this) }) throw IllegalStateException()
+    fun ensureIsNoneOf(vararg states : HandlerState) {
+        if (states.contains(this))
+            throw IllegalStateException()
     }
 }
-

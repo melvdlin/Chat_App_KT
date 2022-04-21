@@ -9,25 +9,51 @@ import java.net.Socket
 
 internal class DefaultConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>) : ConnectionHandler {
 
-    private val inHandler = IncomingTrafficHandler(socket.getInputStream()!!, ::onInHandlerClosed, ::onInHandlerError)
-    private val outHandler = OutgoingTrafficHandler(socket.getOutputStream()!!, ::onOutHandlerClosed, ::onOutHandlerError)
+    private val outHandler =
+        OutgoingTrafficHandler(
+            socket.getOutputStream()!!,
+            ::onOutHandlerClosed,
+            ::onOutHandlerError
+        )
+
+    private val inHandler =
+        IncomingTrafficHandler(
+            socket.getInputStream()!!,
+            {
+                try { outHandler.terminate(it) }
+                catch (_ : IllegalStateException) { }
+            },
+            ::onInHandlerClosed,
+            ::onInHandlerError
+        )
 
     private val onClosedListeners = HashSet<() -> Unit>()
+    private val onErrorListeners = HashSet<() -> Unit>()
 
     override fun start() {
-        TODO("Not yet implemented")
+        plugins.forEach { it.onConnectionEstablished(this) }
+        inHandler.start()
+        outHandler.start()
     }
 
     override fun close() {
-        TODO("Not yet implemented")
+        outHandler.close()
     }
 
     override fun addOnClosedListener(listener : () -> Unit) : Boolean {
-        TODO("Not yet implemented")
+        return synchronized(onClosedListeners) { onClosedListeners.add(listener) }
     }
 
     override fun removeOnClosedListener(listener : () -> Unit) : Boolean {
-        TODO("Not yet implemented")
+        return synchronized(onClosedListeners) { onClosedListeners.remove(listener) }
+    }
+
+    override fun addOnErrorListener(listener : () -> Unit) : Boolean {
+        return synchronized(onErrorListeners) { onErrorListeners.add(listener) }
+    }
+
+    override fun removeOnErrorListener(listener : () -> Unit) : Boolean {
+        return synchronized(onErrorListeners) { onErrorListeners.remove(listener) }
     }
 
     override fun addOnTrafficReceivedListener(listener : (Traffic) -> Unit) : Boolean {
@@ -39,7 +65,7 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
     }
 
     override fun sendTraffic(traffic : Traffic) {
-        TODO("Not yet implemented")
+
     }
 
     override fun sendTimeoutRequest(
@@ -57,18 +83,47 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
     }
 
     private fun onInHandlerClosed() {
-        TODO("Not yet implemented")
+        if (synchronized(outHandler.state) {
+                outHandler.state != HandlerState.CLOSED
+            }){
+            outHandler.kill()
+        }
+        try {
+            socket.close()
+        } catch (_ : Throwable) { }
+        onClosedListeners.forEach{ it() }
     }
 
     private fun onOutHandlerClosed() {
-        TODO("Not yet implemented")
+        if (synchronized(inHandler.state) {
+            inHandler.state == HandlerState.CLOSED
+        }) {
+            try {
+                socket.close()
+            } catch (_ : Throwable) { }
+            onClosedListeners.forEach{ it() }
+        } else {
+            inHandler.close()
+        }
     }
 
     private fun onInHandlerError() {
-        TODO("Not yet implemented")
+        outHandler.kill()
+        socket.close()
+        synchronized(onErrorListeners) {
+            onErrorListeners.forEach {
+                it()
+            }
+        }
     }
 
     private fun onOutHandlerError() {
-        TODO("Not yet implemented")
+        inHandler.kill()
+        socket.close()
+        synchronized(onErrorListeners) {
+            onErrorListeners.forEach {
+                it()
+            }
+        }
     }
 }

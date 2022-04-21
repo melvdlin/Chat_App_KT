@@ -95,7 +95,7 @@ class ClientFXApp : Application() {
                     }
                 },
                 onConnectionClosing = {
-                    Client.forEachPlugin { it.onConnectionClosing() }
+                    Client.forEachPlugin { it.onConnectionClosed() }
                     Platform.runLater {
                         portEntryBox.textField.isDisable = false
                         portEntryBox.submitButton.isDisable = false

@@ -89,7 +89,7 @@ class ConnectionHandler(private val socket : Socket, private val plugins : Colle
 
     override fun run() {
 
-        plugins.forEach { it.onConnectionEstablished(this, incomingTrafficHandler) }
+        //plugins.forEach { it.onConnectionEstablished(this, incomingTrafficHandler) }
 
         incomingTrafficHandler.start()
 

@@ -1,7 +1,8 @@
 package org.melvdlin.chat_app_kt.core.server
 
 import org.melvdlin.chat_app_kt.core.plugin.ServerPlugin
-import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.netcode.impl.DefaultConnectionHandler
 import java.net.Socket
 import java.util.concurrent.locks.ReentrantLock
 
@@ -12,8 +13,8 @@ class ConnectionManager(private val plugins : Collection<ServerPlugin>) {
 
     fun dispatch(client : Socket) {
         synchronized(handlers) {
-            val handler = ConnectionHandler(client, plugins)
-            handler.addOnClosingListener {
+            val handler = DefaultConnectionHandler(client, plugins)
+            handler.addOnClosedListener {
                 synchronized(handlers) {
                     handlers -= handler
                 }
@@ -26,7 +27,7 @@ class ConnectionManager(private val plugins : Collection<ServerPlugin>) {
     fun broadcastServerInterrupted() {
         synchronized(handlers) {
             handlers.forEach {
-                it.interrupt()
+                it.close()
             }
         }
     }

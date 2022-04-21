@@ -8,8 +8,7 @@ import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.LoginRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.SendMessageRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.server.MessageBroadcast
 import org.melvdlin.chat_app_kt.chatplugin.traffic.server.responses.FetchMessageLogResponse
-import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
-import org.melvdlin.chat_app_kt.core.deprecated.IncomingTrafficHandler
+import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
 import org.melvdlin.chat_app_kt.core.client.Client
 import org.melvdlin.chat_app_kt.core.traffic.ErrorNotification
 import org.melvdlin.chat_app_kt.core.traffic.Response
@@ -21,7 +20,6 @@ import java.util.concurrent.TimeUnit
 
 class Controller(
     private val connectionHandler : ConnectionHandler,
-    private val incomingTrafficHandler : IncomingTrafficHandler,
     private val model : Model
     ) : Thread() {
 
@@ -29,7 +27,7 @@ class Controller(
     private val messageQueue : SynchronousQueue<Any> = SynchronousQueue()
 
     override fun run() {
-        incomingTrafficHandler.addOnTrafficReceivedListener(this::onTrafficReceived)
+        connectionHandler.addOnTrafficReceivedListener(this::onTrafficReceived)
 
         lateinit var loginUI : LoginUI
         lateinit var fetchingUI : FetchingUI
@@ -81,11 +79,11 @@ class Controller(
                 FetchMessageLogRequest(Client.Constants.backlog),
                 Client.Constants.timeoutMillis,
                 {
-                    fetchMessageLogResponseHandler(it)
+                    fetchMessageLogFailHandler()
                     @Suppress("BlockingMethodInNonBlockingContext")
                     messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
                 }, {
-                    fetchMessageLogFailHandler()
+                    fetchMessageLogResponseHandler(it)
                     @Suppress("BlockingMethodInNonBlockingContext")
                     messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
                 }
@@ -128,26 +126,24 @@ class Controller(
         connectionHandler.sendTimeoutRequest(
             LoginRequest(username),
             Client.Constants.timeoutMillis,
-            {
-                if (it !is OkResponse || !messageQueue.offer(Any())) {
-                    onFailed()
-                }
-            },
-            onFailed
-        )
+            onFailed,
+        ) {
+            if (it !is OkResponse || !messageQueue.offer(Any())) {
+                onFailed()
+            }
+        }
     }
 
     fun sendMessage(body : String, onFailed : () -> Unit = { }) {
         connectionHandler.sendTimeoutRequest(
             SendMessageRequest(body),
             Client.Constants.timeoutMillis,
-            {
-                if (it !is OkResponse) {
-                    onFailed()
-                }
-            },
-            onFailed
-        )
+            onFailed,
+        ) {
+            if (it !is OkResponse) {
+                onFailed()
+            }
+        }
     }
 
     private fun onTrafficReceived(traffic : Traffic) {

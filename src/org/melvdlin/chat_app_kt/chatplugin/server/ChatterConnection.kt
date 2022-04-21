@@ -7,7 +7,7 @@ import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.LoginRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests.SendMessageRequest
 import org.melvdlin.chat_app_kt.chatplugin.traffic.server.responses.FetchMessageLogResponse
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
-import org.melvdlin.chat_app_kt.core.deprecated.ConnectionHandler
+import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
 import org.melvdlin.chat_app_kt.core.traffic.client.*
 import org.melvdlin.chat_app_kt.core.traffic.client.requests.ClientRequest
 import org.melvdlin.chat_app_kt.core.traffic.server.responses.ClientErrorResponse

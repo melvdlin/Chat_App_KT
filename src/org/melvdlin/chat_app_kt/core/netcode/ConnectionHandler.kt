@@ -8,6 +8,8 @@ interface ConnectionHandler : AutoCloseable {
     fun start()
     fun addOnClosedListener(listener : () -> Unit) : Boolean
     fun removeOnClosedListener(listener : () -> Unit) : Boolean
+    fun addOnErrorListener(listener : () -> Unit) : Boolean
+    fun removeOnErrorListener(listener : () -> Unit) : Boolean
     fun addOnTrafficReceivedListener(listener : (Traffic) -> Unit) : Boolean
     fun removeOnTrafficReceivedListener(listener : (Traffic) -> Unit) : Boolean
     fun sendTraffic(traffic : Traffic)
