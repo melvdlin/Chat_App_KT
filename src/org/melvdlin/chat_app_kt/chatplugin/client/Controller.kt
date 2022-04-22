@@ -113,6 +113,12 @@ class Controller(
     }
 
     fun exit() {
+        TODO("Fix this, there is zero structure in this method:" +
+                "if called while in LOGIN state, just advances app flow," +
+                "sends disconnect req and closes connection handler," +
+                "app flow then proceeds to sends fetch log req resulting" +
+                "in illegal state exception from connection handler due to" +
+                "connection handler being closed")
         synchronized(model) {
             if (model.appState in listOf(AppState.LOGIN, AppState.FETCH_LOG, AppState.CHATTING)) {
                 connectionHandler.sendTraffic(DisconnectRequest())

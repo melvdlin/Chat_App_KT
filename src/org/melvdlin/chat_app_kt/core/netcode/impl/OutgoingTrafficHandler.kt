@@ -25,7 +25,7 @@ internal class OutgoingTrafficHandler(
 
     private var timerIsInitialised = true
     private val requestTimer : Timer by lazy {
-        synchronized(requestTimer) {
+        synchronized(::requestTimer) {
             timerIsInitialised = true
         }
         val timer = Timer(true)
