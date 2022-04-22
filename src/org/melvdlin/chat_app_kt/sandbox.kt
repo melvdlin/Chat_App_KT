@@ -2,18 +2,41 @@
 
 package org.melvdlin.chat_app_kt
 
+import java.util.*
+import kotlin.concurrent.schedule
 import kotlin.reflect.KProperty0
 import kotlin.reflect.jvm.isAccessible
 
+class SomeClass {
+    fun someFun() {
+        val t = Timer()
+
+        t.schedule(5000) {
+            println("ayyy lmao")
+        }
+        t.schedule(5001) {
+            t.cancel()
+        }
+    }
+}
+
+
 fun main() {
 
-    try {
-        synchronized(Any()) {
-            throw Exception()
-        }
-    } catch (e : Exception) {
-        println("exception!")
-    }
+    SomeClass().someFun()
+
+    Thread.sleep(6000)
+    println("these nuts")
+
+//    try {
+//        synchronized(Any()) {
+//            throw Exception()
+//        }
+//    } catch (e : NullPointerException) {
+//        println("exception!")
+//    } finally {
+//        println("finally...")
+//    }
 
 //    val someSand = BoxSand()
 

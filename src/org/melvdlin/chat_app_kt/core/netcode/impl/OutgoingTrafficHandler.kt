@@ -1,10 +1,8 @@
 package org.melvdlin.chat_app_kt.core.netcode.impl
 
-import org.melvdlin.chat_app_kt.core.client.Client
 import org.melvdlin.chat_app_kt.core.traffic.Request
 import org.melvdlin.chat_app_kt.core.traffic.Response
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
-import org.melvdlin.chat_app_kt.core.traffic.server.responses.OkResponse
 import java.io.ObjectOutputStream
 import java.io.OutputStream
 import java.util.*
@@ -12,120 +10,79 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.collections.HashMap
 import kotlin.concurrent.schedule
+import kotlin.concurrent.scheduleAtFixedRate
 
 internal class OutgoingTrafficHandler(
     private val stream : OutputStream,
     private val onClosed : () -> Unit,
     private val onError : () -> Unit
 ) : AutoCloseable {
-    companion object Constants {
-        private val illegalStates = arrayOf(
-            HandlerState.CLOSING,
-            HandlerState.CLOSED,
-            HandlerState.ERROR
-        )
-    }
 
-    val stateLock = Any()
     var state : HandlerState = HandlerState.UNINITIALIZED
     private set
 
-    private var dcMode = DCMode.OTHER
+    private val timeoutRequests : MutableMap<Request, (Response) -> Unit> = mutableMapOf()
 
-    private var timeoutRequests : MutableMap<Request, (Response) -> Unit> = HashMap()
-
+    private var timerIsInitialised = true
     private val requestTimer : Timer by lazy {
-        Timer(true)
+        synchronized(requestTimer) {
+            timerIsInitialised = true
+        }
+        val timer = Timer(true)
+        //to close the timer once it is no longer needed
+        timer.scheduleAtFixedRate(1000, 1000) {
+            if (synchronized(state) { state } > HandlerState.RUNNING &&
+                synchronized(timeoutRequests) { timeoutRequests.isEmpty() }) {
+                timer.cancel()
+            }
+        }
+        return@lazy timer
     }
 
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
 
-    val worker = Thread(::work)
+    private val worker = Thread(::work, "OutgoingTrafficWorker")
 
     private fun work() {
         ObjectOutputStream(stream).use {
-            while (
-                !Thread.currentThread().isInterrupted &&
-                (synchronized(stateLock) { state }
-                == HandlerState.RUNNING
-                || !trafficQueue.isEmpty())
-            ) {
+            while (synchronized(state) { state } == HandlerState.RUNNING || !trafficQueue.isEmpty()) {
                 try {
                     val traffic = trafficQueue.take()
                     it.writeObject(traffic)
                 } catch (_ : InterruptedException) {
-                    Thread.currentThread().interrupt()
+
                 } catch (_ : Throwable) {
-                    synchronized(stateLock) {
+                    synchronized(state) {
                         state = HandlerState.ERROR
+                        onError()
                     }
                 }
             }
         }
-        if (Thread.currentThread().isInterrupted)
-            return
-        if (synchronized(stateLock) { state } == HandlerState.ERROR) {
-            onError()
-            return
-        }
-        if(synchronized(stateLock) {
-            if (dcMode == DCMode.OTHER) {
-                state = HandlerState.CLOSED
-                return@synchronized true
-            } else {
-                return@synchronized false
-            }
-        }) {
+
+        if (synchronized(state) { (state == HandlerState.CLOSING).also { if (it) state = HandlerState.CLOSED } }) {
             onClosed()
         }
     }
 
     fun start() {
-        worker.start()
-        synchronized(stateLock) {
+        synchronized(state) {
             state = HandlerState.RUNNING
+            worker.start()
         }
     }
 
-    fun kill() {
+
+    override fun close() {
+        synchronized(state) {
+            if (state >= HandlerState.CLOSING)
+                return
+            state = HandlerState.CLOSING
+        }
         worker.interrupt()
     }
 
-    fun terminate(req : DisconnectRequest) {
-        synchronized(stateLock) {
-            state.ensureIsNoneOf(*illegalStates)
-            state = HandlerState.CLOSING
-            dcMode = DCMode.OTHER
-        }
-        trafficQueue.put(OkResponse(req))
-    }
-
-    override fun close() {
-        synchronized(stateLock) {
-            state.ensureIsNoneOf(*illegalStates)
-            state = HandlerState.CLOSING
-            dcMode = DCMode.SELF
-        }
-        val onReqFailed = {
-            synchronized(stateLock) {
-                state = HandlerState.ERROR
-            }
-            onError()
-        }
-        uncheckedSendTimeoutRequest(
-            DisconnectRequest(),
-            Client.Constants.timeoutMillis,
-            onReqFailed
-        ) {
-            if (it !is OkResponse)
-                onReqFailed()
-        }
-    }
-
     fun sendTraffic(traffic : Traffic) {
-        synchronized(stateLock) {
-            state.ensureIsNoneOf(*illegalStates)
-        }
         trafficQueue.put(traffic)
     }
 
@@ -135,36 +92,22 @@ internal class OutgoingTrafficHandler(
         onTimeout : () -> Unit,
         responseHandler : (Response) -> Unit
     ) {
-        synchronized(stateLock) {
-            state.ensureIsNoneOf(*illegalStates)
-        }
-        uncheckedSendTimeoutRequest(
-            request,
-            timeoutMillis,
-            onTimeout,
-            responseHandler
-        )
-    }
-
-    private fun uncheckedSendTimeoutRequest(
-        request : Request,
-        timeoutMillis : Long,
-        onTimeout : () -> Unit,
-        responseHandler : (Response) -> Unit
-    ) {
         synchronized(timeoutRequests) {
             timeoutRequests += request to responseHandler
             requestTimer.schedule(timeoutMillis) {
-                timeoutRequests.remove(request)?.let {
-                    onTimeout()
+                synchronized(timeoutRequests) {
+                    timeoutRequests.remove(request)?.let {
+                        onTimeout()
+                    }
                 }
             }
         }
+        sendTraffic(request)
     }
 
     fun onResponseReceived(response : Response) {
         synchronized(timeoutRequests) {
-            timeoutRequests.remove(response.to)?.invoke(response)
+            timeoutRequests.remove(response.to)
         }
     }
 }

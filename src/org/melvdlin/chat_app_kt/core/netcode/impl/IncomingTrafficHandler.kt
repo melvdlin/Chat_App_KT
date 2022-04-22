@@ -6,75 +6,52 @@ import java.io.ObjectInputStream
 
 internal class IncomingTrafficHandler(
     private val stream : InputStream,
-    private val onDisconnectRequested : (DisconnectRequest) -> Unit,
     private val onClosed : () -> Unit,
     private val onError : () -> Unit
 ) : AutoCloseable {
-    companion object Constants {
-        private val illegalStates = arrayOf(
-            HandlerState.CLOSING,
-            HandlerState.CLOSED,
-            HandlerState.ERROR
-        )
-    }
 
     var state : HandlerState = HandlerState.UNINITIALIZED
     private set
 
-    private val listeners : MutableList<(Traffic) -> Unit>
-    = mutableListOf({
-        if (it is DisconnectRequest) {
-            onDisconnectRequested(it)
-        }
-    })
+    private val listeners : MutableCollection<(Traffic) -> Unit> = mutableSetOf()
 
-    private val worker = Thread(::work)
+    private val worker = Thread(::work, "IncomingTrafficWorker")
 
     fun start() {
-        worker.start()
         synchronized(state) {
             state = HandlerState.RUNNING
+            worker.start()
         }
     }
 
     private fun work() {
         ObjectInputStream(stream).use {
-            var traffic : Traffic
-            while(!Thread.currentThread().isInterrupted
-                && synchronized(state){state}
-                == HandlerState.RUNNING
-            ) {
+            while (!Thread.currentThread().isInterrupted) {
                 try {
-                    traffic = it.readObject() as Traffic
-                    synchronized(listeners) {
-                        listeners.forEach { listener ->
-                            listener(traffic)
-                        }
+                    val traffic = it.readObject() as Traffic
+                    listeners.forEach {
+                        it(traffic)
                     }
+                } catch (_ : InterruptedException) {
+
                 } catch (_ : Throwable) {
                     synchronized(state) {
                         state = HandlerState.ERROR
                         onError()
                     }
                 }
-
             }
         }
-        synchronized(state) {
-            if (state != HandlerState.ERROR) {
-                state = HandlerState.CLOSED
-                onClosed()
-            }
-        }
-    }
 
-    fun kill() {
-        worker.interrupt()
+        if (synchronized(state) { (state == HandlerState.CLOSING).also { if (it) state = HandlerState.CLOSED } }) {
+            onClosed()
+        }
     }
 
     override fun close() {
         synchronized(state) {
-            state.ensureIsNoneOf(*illegalStates)
+            if (state >= HandlerState.CLOSING)
+                return
             state = HandlerState.CLOSING
         }
         worker.interrupt()
