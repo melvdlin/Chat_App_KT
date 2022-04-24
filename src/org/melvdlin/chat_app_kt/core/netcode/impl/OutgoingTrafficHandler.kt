@@ -18,9 +18,6 @@ internal class OutgoingTrafficHandler(
     private val onError : () -> Unit
 ) : AutoCloseable {
 
-    var state : HandlerState = HandlerState.UNINITIALIZED
-    private set
-
     private val timeoutRequests : MutableMap<Request, (Response) -> Unit> = mutableMapOf()
 
     private var timerIsInitialised = true
@@ -42,6 +39,13 @@ internal class OutgoingTrafficHandler(
     private val trafficQueue : BlockingQueue<Traffic> = LinkedBlockingQueue()
 
     private val worker = Thread(::work, "OutgoingTrafficWorker")
+
+    var state : HandlerState = HandlerState.UNINITIALIZED
+        private set
+
+    init {
+        state = HandlerState.IDLE
+    }
 
     private fun work() {
         ObjectOutputStream(stream).use {
@@ -107,7 +111,7 @@ internal class OutgoingTrafficHandler(
 
     fun onResponseReceived(response : Response) {
         synchronized(timeoutRequests) {
-            timeoutRequests.remove(response.to)
+            timeoutRequests.remove(response.to)?.let { it(response) }
         }
     }
 }

@@ -10,19 +10,12 @@ internal class IncomingTrafficHandler(
     private val onError : () -> Unit
 ) : AutoCloseable {
 
-    var state : HandlerState = HandlerState.UNINITIALIZED
-    private set
-
     private val listeners : MutableCollection<(Traffic) -> Unit> = mutableSetOf()
 
     private val worker = Thread(::work, "IncomingTrafficWorker")
 
-    fun start() {
-        synchronized(state) {
-            state = HandlerState.RUNNING
-            worker.start()
-        }
-    }
+    var state : HandlerState = HandlerState.UNINITIALIZED
+        private set
 
     private fun work() {
         ObjectInputStream(stream).use {
@@ -45,6 +38,13 @@ internal class IncomingTrafficHandler(
 
         if (synchronized(state) { (state == HandlerState.CLOSING).also { if (it) state = HandlerState.CLOSED } }) {
             onClosed()
+        }
+    }
+
+    fun start() {
+        synchronized(state) {
+            state = HandlerState.RUNNING
+            worker.start()
         }
     }
 
