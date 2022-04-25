@@ -2,58 +2,25 @@
 
 package org.melvdlin.chat_app_kt
 
-import java.util.*
-import kotlin.concurrent.schedule
-import kotlin.reflect.KProperty0
-import kotlin.reflect.jvm.isAccessible
+import java.io.EOFException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
 
-class SomeClass {
-    fun someFun() {
-        val t = Timer()
-
-        t.schedule(5000) {
-            println("ayyy lmao")
-        }
-        t.schedule(5001) {
-            t.cancel()
-        }
-    }
-}
-
+abstract class SomeAbstract()
+data class SomeData(val l : Long, val s : String, val d : Double) : SomeAbstract()
 
 fun main() {
 
-    SomeClass().someFun()
+    val m = mutableMapOf<SomeData, Int>()
 
-    Thread.sleep(6000)
-    println("these nuts")
+    val obj1 = SomeData(1, "deez", 4.2)
+    val obj2 = SomeData(1, "deez", 4.2)
 
-//    try {
-//        synchronized(Any()) {
-//            throw Exception()
-//        }
-//    } catch (e : NullPointerException) {
-//        println("exception!")
-//    } finally {
-//        println("finally...")
-//    }
+    m += obj1 to 1
 
-//    val someSand = BoxSand()
+    println(m.remove(obj2))
 
-//    println(someSand::lazy.isLazyInitialized)
-}
-
-class BoxSand {
-    val lazy : String by lazy {
-        "ayy"
-    }
-}
-
-val KProperty0<*>.isLazyInitialized : Boolean
-get() {
-    val originalAccessLevel = isAccessible
-    isAccessible = true
-    val retVal = (getDelegate() as Lazy<*>).isInitialized()
-    isAccessible = originalAccessLevel
-    return retVal
 }

@@ -1,8 +1,10 @@
 package org.melvdlin.chat_app_kt.core.netcode.impl
 
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
+import java.io.EOFException
 import java.io.InputStream
 import java.io.ObjectInputStream
+import java.net.SocketException
 
 internal class IncomingTrafficHandler(
     private val stream : InputStream,
@@ -25,8 +27,24 @@ internal class IncomingTrafficHandler(
                     listeners.forEach {
                         it(traffic)
                     }
-                } catch (_ : InterruptedException) {
-
+                } catch (_ : EOFException) {
+                    synchronized(state) {
+                        if (state == HandlerState.CLOSING)
+                            Thread.currentThread().interrupt()
+                        else {
+                            state = HandlerState.ERROR
+                            onError()
+                        }
+                    }
+                } catch (_ : SocketException) {
+                    synchronized(state) {
+                        if (state == HandlerState.CLOSING)
+                            Thread.currentThread().interrupt()
+                        else {
+                            state = HandlerState.ERROR
+                            onError()
+                        }
+                    }
                 } catch (_ : Throwable) {
                     synchronized(state) {
                         state = HandlerState.ERROR
@@ -54,7 +72,6 @@ internal class IncomingTrafficHandler(
                 return
             state = HandlerState.CLOSING
         }
-        worker.interrupt()
     }
 
     fun addOnTrafficReceivedListener(listener : (Traffic) -> Unit) = synchronized(listeners) { listeners.add(listener) }

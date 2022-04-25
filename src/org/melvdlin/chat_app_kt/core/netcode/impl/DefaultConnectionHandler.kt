@@ -2,16 +2,15 @@ package org.melvdlin.chat_app_kt.core.netcode.impl
 
 import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
 import org.melvdlin.chat_app_kt.core.plugin.Plugin
-import org.melvdlin.chat_app_kt.core.traffic.Request
-import org.melvdlin.chat_app_kt.core.traffic.Response
-import org.melvdlin.chat_app_kt.core.traffic.Traffic
+import org.melvdlin.chat_app_kt.core.traffic.*
 import org.melvdlin.chat_app_kt.core.traffic.server.responses.OkResponse
 import java.net.Socket
+import java.util.concurrent.SynchronousQueue
 
 internal class DefaultConnectionHandler(private val socket : Socket, private val plugins : Collection<Plugin>) : ConnectionHandler {
 
     companion object Constants {
-        const val DCRTimeout : Long = 3000
+        const val DisconnectRequestTimeout : Long = 3000
     }
 
     private val outHandler =
@@ -21,12 +20,16 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
             ::onOutHandlerError
         )
 
+    private val outHandlerClosedQueue = SynchronousQueue<Any>()
+
     private val inHandler =
         IncomingTrafficHandler(
             socket.getInputStream()!!,
             ::onInHandlerClosed,
             ::onInHandlerError
         )
+
+    private val onTrafficReceivedListeners : MutableCollection<(Traffic) -> Unit> = mutableSetOf()
 
     private val onClosedListeners : MutableCollection<() -> Unit> = mutableSetOf()
     private var onClosedListenersCalled = false
@@ -36,6 +39,8 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
     private var state = HandlerState.UNINITIALIZED
 
     init {
+        //DEBUG
+        println("Instantiating new DefaultConnectionHandler...")
         state = HandlerState.IDLE
     }
 
@@ -44,11 +49,9 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
             if (state != HandlerState.IDLE)
                 return
 
+
             plugins.forEach { it.onConnectionEstablished(this) }
-            inHandler.addOnTrafficReceivedListener {
-                if (it is Response)
-                    outHandler.onResponseReceived(it)
-            }
+            inHandler.addOnTrafficReceivedListener(::onTrafficReceived)
             inHandler.start()
             outHandler.start()
 
@@ -65,7 +68,7 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
 
         outHandler.sendTimeoutRequest(
             request = DisconnectRequest(),
-            timeoutMillis = DCRTimeout,
+            timeoutMillis = DisconnectRequestTimeout,
             onTimeout = ::onClosingNotAcknowledged,
             responseHandler = {
                 if (it is OkResponse) {
@@ -77,6 +80,32 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
         )
     }
 
+    private fun onTrafficReceived(traffic : Traffic) {
+        if (traffic is DisconnectRequest)
+            onDisconnectRequestReceived(traffic)
+        if (traffic is Response)
+            outHandler.onResponseReceived(traffic)
+        synchronized(onTrafficReceivedListeners) {
+            onTrafficReceivedListeners.forEach { it(traffic) }
+        }
+    }
+
+    private fun onDisconnectRequestReceived(req : DisconnectRequest) {
+        synchronized(state) {
+            if (state < HandlerState.CLOSING)
+                state = HandlerState.CLOSING
+            else if (state > HandlerState.CLOSING)
+                return
+
+            outHandler.sendTraffic(
+                CallbackTraffic(
+                    OkResponse(req),
+                    ::onClosingAcknowledged
+                )
+            )
+        }
+    }
+
     private fun onClosingNotAcknowledged() {
         synchronized(state) {
             state = HandlerState.ERROR
@@ -84,6 +113,7 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
         onErrorListeners.forEach { it.invoke() }
         outHandler.close()
         inHandler.close()
+        outHandlerClosedQueue.take()
         socket.close()
         onError()
     }
@@ -137,11 +167,11 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
     }
 
     override fun addOnTrafficReceivedListener(listener : (Traffic) -> Unit) : Boolean {
-        return inHandler.addOnTrafficReceivedListener(listener)
+        return synchronized(onTrafficReceivedListeners) { onTrafficReceivedListeners.add(listener) }
     }
 
     override fun removeOnTrafficReceivedListener(listener : (Traffic) -> Unit) : Boolean {
-        return inHandler.removeOnTrafficReceivedListener(listener)
+        return synchronized(onTrafficReceivedListeners) { onTrafficReceivedListeners.remove(listener) }
     }
 
     override fun sendTraffic(traffic : Traffic) {

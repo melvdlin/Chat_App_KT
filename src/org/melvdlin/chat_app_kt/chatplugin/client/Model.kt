@@ -18,6 +18,7 @@ enum class AppState {
     LOGIN,
     FETCH_LOG,
     CHATTING,
+    TERMINATING,
     TERMINATED,
     ERROR,
 }

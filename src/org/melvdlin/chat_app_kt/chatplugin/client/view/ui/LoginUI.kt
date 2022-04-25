@@ -10,6 +10,7 @@ import org.melvdlin.chat_app_kt.chatplugin.client.ClientChatPlugin
 import org.melvdlin.chat_app_kt.chatplugin.client.Controller
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.TextEntryBox
+import java.util.concurrent.SynchronousQueue
 
 class LoginUI(
     private val controller : Controller,
@@ -17,9 +18,9 @@ class LoginUI(
     : ManagedStage() {
 
     override val keepOpen = false
-
     val root  = HBox()
     val nameEntryBox = TextEntryBox(true, "Login", "Enter a username...")
+
     val exitButton = Button("Exit")
 
     init {

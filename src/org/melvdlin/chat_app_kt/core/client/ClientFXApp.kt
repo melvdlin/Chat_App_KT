@@ -94,7 +94,7 @@ class ClientFXApp : Application() {
                         portEntryBox.submitButton.isDisable = false
                     }
                 },
-                onConnectionClosing = {
+                onConnectionClosed = {
                     Client.forEachPlugin { it.onConnectionClosed() }
                     Platform.runLater {
                         portEntryBox.textField.isDisable = false
@@ -120,7 +120,7 @@ class ClientFXApp : Application() {
     private fun connectAsync(
         host : InetAddress,
         port : Int,
-        onConnectionClosing : () -> Unit,
+        onConnectionClosed : () -> Unit,
         onStart : () -> Unit,
         onSuccess : () -> Unit,
         onFailed : (e : Throwable) -> Unit) {
@@ -128,7 +128,7 @@ class ClientFXApp : Application() {
         Thread {
             onStart()
             try {
-                Client.onConnected(Socket(host, port), onConnectionClosing)
+                Client.onConnected(Socket(host, port), onConnectionClosed)
                 onSuccess()
             } catch (e : Throwable) {
                 onFailed(e)

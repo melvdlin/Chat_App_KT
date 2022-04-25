@@ -38,6 +38,8 @@ object Client {
 
     fun onConnected(server : Socket, onConnectionClosed : () -> Unit) {
         synchronized(connectionLock) {
+            //DEBUG
+            println("Connection established to socket ${server.hashCode()}")
             connection = DefaultConnectionHandler(server, plugins)
             connection.addOnClosedListener(onConnectionClosed)
             connection.start()

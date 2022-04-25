@@ -1,8 +1,6 @@
 package org.melvdlin.chat_app_kt.core.netcode
 
-import org.melvdlin.chat_app_kt.core.traffic.Request
-import org.melvdlin.chat_app_kt.core.traffic.Response
-import org.melvdlin.chat_app_kt.core.traffic.Traffic
+import org.melvdlin.chat_app_kt.core.traffic.*
 
 interface ConnectionHandler : AutoCloseable {
     fun start()

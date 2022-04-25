@@ -5,10 +5,10 @@ import org.melvdlin.chat_app_kt.core.traffic.Response
 import org.melvdlin.chat_app_kt.core.traffic.Traffic
 import java.io.ObjectOutputStream
 import java.io.OutputStream
+import java.security.SecureRandom
 import java.util.*
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
-import kotlin.collections.HashMap
 import kotlin.concurrent.schedule
 import kotlin.concurrent.scheduleAtFixedRate
 
@@ -18,7 +18,9 @@ internal class OutgoingTrafficHandler(
     private val onError : () -> Unit
 ) : AutoCloseable {
 
-    private val timeoutRequests : MutableMap<Request, (Response) -> Unit> = mutableMapOf()
+    private val timeoutRequests : MutableMap<Long, (Response) -> Unit> = mutableMapOf()
+    private val takenRequestIDs : MutableSet<Long> = mutableSetOf()
+    private val idGenerator = SecureRandom()
 
     private var timerIsInitialised = true
     private val requestTimer : Timer by lazy {
@@ -48,11 +50,13 @@ internal class OutgoingTrafficHandler(
     }
 
     private fun work() {
-        ObjectOutputStream(stream).use {
+        ObjectOutputStream(stream).use { oos ->
             while (synchronized(state) { state } == HandlerState.RUNNING || !trafficQueue.isEmpty()) {
                 try {
-                    val traffic = trafficQueue.take()
-                    it.writeObject(traffic)
+                    var onSent : (() -> Unit)? = null
+                    val traffic = trafficQueue.take().let { if (it is CallbackTraffic) it.payload.apply { onSent = it.onSent } else it }
+                    oos.writeObject(traffic)
+                    onSent?.invoke()
                 } catch (_ : InterruptedException) {
 
                 } catch (_ : Throwable) {
@@ -96,11 +100,21 @@ internal class OutgoingTrafficHandler(
         onTimeout : () -> Unit,
         responseHandler : (Response) -> Unit
     ) {
+        if (request.id != null)
+            throw IllegalArgumentException("Request must not have its ID set yet")
+
         synchronized(timeoutRequests) {
-            timeoutRequests += request to responseHandler
+            var id : Long
+            do {
+                id = idGenerator.nextLong()
+            } while (id in takenRequestIDs)
+            takenRequestIDs += id
+            request.id = id
+
+            timeoutRequests += id to responseHandler
             requestTimer.schedule(timeoutMillis) {
                 synchronized(timeoutRequests) {
-                    timeoutRequests.remove(request)?.let {
+                    timeoutRequests.remove(id)?.let {
                         onTimeout()
                     }
                 }
@@ -111,7 +125,7 @@ internal class OutgoingTrafficHandler(
 
     fun onResponseReceived(response : Response) {
         synchronized(timeoutRequests) {
-            timeoutRequests.remove(response.to)?.let { it(response) }
+            timeoutRequests.remove(response.to.id)?.let { it(response) }
         }
     }
 }

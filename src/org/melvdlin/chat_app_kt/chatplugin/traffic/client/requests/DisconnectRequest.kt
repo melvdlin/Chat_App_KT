@@ -2,4 +2,4 @@ package org.melvdlin.chat_app_kt.chatplugin.traffic.client.requests
 
 import org.melvdlin.chat_app_kt.core.traffic.client.requests.ClientRequest
 
-class DisconnectRequest : ClientRequest
+class DisconnectRequest : ClientRequest()

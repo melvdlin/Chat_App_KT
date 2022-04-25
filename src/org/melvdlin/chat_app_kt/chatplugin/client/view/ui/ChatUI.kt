@@ -20,6 +20,7 @@ import org.melvdlin.chat_app_kt.chatplugin.client.Controller
 import org.melvdlin.chat_app_kt.chatplugin.client.Model
 import org.melvdlin.chat_app_kt.chatplugin.client.view.fx.*
 import java.util.LinkedList
+import java.util.concurrent.SynchronousQueue
 
 class ChatUI(
     private val controller : Controller,
@@ -43,6 +44,8 @@ class ChatUI(
     val messageEntryBox = TextEntryBox(true, "Send", "Send a message...")
 
     init {
+        //DEBUG
+        println("Instantiating new ChatUI...")
         scene = Scene(root)
 
         root.children.addAll(topBar, messageLogView, messageEntryBox)
@@ -82,9 +85,12 @@ class ChatUI(
                         }
                     }
                 }
-                Platform.runLater {
-                    messageLogView.scrollTo(messageLog.lastIndex)
-                }
+            }
+        })
+
+        messageLog.addListener(ListChangeListener {
+            Platform.runLater {
+                messageLogView.scrollTo(messageLog.lastIndex)
             }
         })
     }

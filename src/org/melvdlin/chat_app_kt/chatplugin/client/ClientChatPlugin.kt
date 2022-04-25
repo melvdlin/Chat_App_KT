@@ -5,13 +5,15 @@ import org.melvdlin.chat_app_kt.core.netcode.ConnectionHandler
 
 class ClientChatPlugin : ClientPlugin {
 
-    private val model = Model()
+    private var model : Model? = null
     private var connectionHandler : ConnectionHandler? = null
 
     private val controllerLock = Any()
     private var controller : Controller? = null
 
-    override fun onClientStartup() { }
+    override fun onClientStartup() {
+        model = Model()
+    }
 
     override fun onConnectionEstablished(
         connectionHandler : ConnectionHandler,
@@ -19,14 +21,14 @@ class ClientChatPlugin : ClientPlugin {
         this.connectionHandler = connectionHandler
 
         synchronized(controllerLock) {
-            controller = Controller(connectionHandler, model)
+            controller = Controller(connectionHandler, model!!)
             controller!!.start()
         }
     }
 
     override fun onConnectionClosed() {
         synchronized(controllerLock) {
-            controller?.onConnectionClosing()
+            controller?.onConnectionClosed()
         }
     }
 

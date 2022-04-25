@@ -21,10 +21,15 @@ import java.util.concurrent.TimeUnit
 class Controller(
     private val connectionHandler : ConnectionHandler,
     private val model : Model
-    ) : Thread() {
+    ) : Thread("ClientChatPluginController") {
 
     private val stageManager = StageManager()
     private val messageQueue : SynchronousQueue<Any> = SynchronousQueue()
+
+    init {
+        //DEBUG
+        println("Instantiating new Controller...")
+    }
 
     override fun run() {
         connectionHandler.addOnTrafficReceivedListener(this::onTrafficReceived)
@@ -43,61 +48,65 @@ class Controller(
         }
 
         try {
-            messageQueue.take()
+            run logic@{
+                messageQueue.take()
 
-            // LOGIN
+                // LOGIN
 
-            synchronized(model) { model.appState = AppState.LOGIN }
-            Platform.runLater(loginUI::show)
-            messageQueue.take()
+                synchronized(model) { model.appState = AppState.LOGIN }
+                Platform.runLater(loginUI::show)
+                messageQueue.take()
+                if (synchronized(model) { model.appState } == AppState.TERMINATING)
+                    return@logic
 
-            // FETCH_LOG
+                // FETCH_LOG
 
-            synchronized(model) { model.appState = AppState.FETCH_LOG }
-            Platform.runLater(loginUI::hide)
-            Platform.runLater(fetchingUI::show)
+                synchronized(model) { model.appState = AppState.FETCH_LOG }
+                Platform.runLater(loginUI::hide)
+                Platform.runLater(fetchingUI::show)
 
-            val fetchMessageLogFailHandler = {
-                Platform.runLater {
-                    val ep = ErrorPopup(false, "Failed to fetch message log.")
-                    stageManager.add(ep)
-                    ep.show()
-                }
-            }
-
-            val fetchMessageLogResponseHandler : (Response) -> Unit = {
-                if (it is FetchMessageLogResponse) {
-                    synchronized(model) {
-                        model.messageLog.addAll(it.messageLog)
+                val fetchMessageLogFailHandler = {
+                    Platform.runLater {
+                        val ep = ErrorPopup(false, "Failed to fetch message log.")
+                        stageManager.add(ep)
+                        ep.show()
                     }
-                } else {
-                    fetchMessageLogFailHandler()
                 }
+
+                val fetchMessageLogResponseHandler : (Response) -> Unit = {
+                    if (it is FetchMessageLogResponse) {
+                        synchronized(model) {
+                            model.messageLog.addAll(it.messageLog)
+                        }
+                    } else {
+                        fetchMessageLogFailHandler()
+                    }
+                }
+
+                connectionHandler.sendTimeoutRequest(
+                    FetchMessageLogRequest(Client.Constants.backlog),
+                    Client.Constants.timeoutMillis,
+                    {
+                        fetchMessageLogFailHandler()
+                        @Suppress("BlockingMethodInNonBlockingContext")
+                        messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
+                    }, {
+                        fetchMessageLogResponseHandler(it)
+                        @Suppress("BlockingMethodInNonBlockingContext")
+                        messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
+                    }
+                )
+
+                messageQueue.take()
+
+                // CHATTING
+
+                synchronized(model) { model.appState = AppState.CHATTING   }
+                Platform.runLater(fetchingUI::hide)
+                Platform.runLater(chatUI::show)
+                Platform.runLater(chatUI.messageEntryBox.textField::requestFocus)
+                messageQueue.take()
             }
-
-            connectionHandler.sendTimeoutRequest(
-                FetchMessageLogRequest(Client.Constants.backlog),
-                Client.Constants.timeoutMillis,
-                {
-                    fetchMessageLogFailHandler()
-                    @Suppress("BlockingMethodInNonBlockingContext")
-                    messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
-                }, {
-                    fetchMessageLogResponseHandler(it)
-                    @Suppress("BlockingMethodInNonBlockingContext")
-                    messageQueue.offer(Any(), 1000, TimeUnit.MILLISECONDS)
-                }
-            )
-
-            messageQueue.take()
-
-            // CHATTING
-
-            synchronized(model) { model.appState = AppState.CHATTING   }
-            Platform.runLater(fetchingUI::hide)
-            Platform.runLater(chatUI::show)
-            Platform.runLater(chatUI.messageEntryBox.textField::requestFocus)
-            messageQueue.take()
 
         } catch (_ : InterruptedException) {
             interrupt()
@@ -108,21 +117,16 @@ class Controller(
         }
     }
 
-    fun onConnectionClosing() {
+    fun onConnectionClosed() {
         stageManager.closeStages()
     }
 
     fun exit() {
-        /*TODO("Fix this, there is zero structure in this method:" +
-                "if called while in LOGIN state, just advances app flow," +
-                "sends disconnect req and closes connection handler," +
-                "app flow then proceeds to sends fetch log req resulting" +
-                "in illegal state exception from connection handler due to" +
-                "connection handler being closed")*/
         synchronized(model) {
             if (model.appState in listOf(AppState.LOGIN, AppState.FETCH_LOG, AppState.CHATTING)) {
                 connectionHandler.sendTraffic(DisconnectRequest())
             }
+            model.appState = AppState.TERMINATING
         }
         messageQueue.offer(Any())
         connectionHandler.close()
