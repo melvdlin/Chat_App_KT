@@ -135,6 +135,7 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
                 onClosedListeners.forEach {
                     it()
                 }
+                plugins.forEach { it.onConnectionClosed() }
             }
         }
     }
@@ -146,6 +147,7 @@ internal class DefaultConnectionHandler(private val socket : Socket, private val
                 onErrorListeners.forEach {
                     it()
                 }
+                plugins.forEach { it.onConnectionError() }
             }
         }
     }
