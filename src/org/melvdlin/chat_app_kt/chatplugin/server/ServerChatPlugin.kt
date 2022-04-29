@@ -22,7 +22,9 @@ class ServerChatPlugin : ServerPlugin {
             val chatterConnection = ChatterConnection(messageLog, connectionHandler)
 
             val sendMessage : (ChatMessage) -> Unit = {
-                chatterConnection.sendMessage(it)
+                synchronized(lock) {
+                    chatterConnection.sendMessage(it)
+                }
             }
             val cleanupAction : () -> Boolean = {
                 messageLog.removeOnMessageAddedListener(sendMessage)
