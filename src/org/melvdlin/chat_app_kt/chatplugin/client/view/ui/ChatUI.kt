@@ -65,7 +65,9 @@ class ChatUI(
             messageEntryBox.clear()
 
             controller.sendMessage(body) {
-                messageLog += SystemMessage(body = "Error sending message:\n$body", error = true)
+                Platform.runLater {
+                    messageLog += SystemMessage(body = "Error sending message:\n$body", error = true)
+                }
             }
         }
 
